@@ -469,7 +469,7 @@ def closure(G, nodes=None, weight=None):
             #             for v, dt, db, t in td_iter}
         else:
             td_iter = _directed_triangles_opentriads_and_degree_iter(G, nodes)
-            closurec = {v: 0 if t == 0 else t / (ot * 2)
+            closurec = {v: 0 if t == 0 else t / ot
                         for v, dt, db, t, ot in td_iter}
     # else:
     #     if weight is not None:
