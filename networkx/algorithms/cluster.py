@@ -108,6 +108,8 @@ def _weighted_triangles_and_degree_iter(G, nodes=None, weight='weight'):
                                       for k in inbrs & jnbrs)
         yield (i, len(inbrs), 2 * weighted_triangles)
 
+def _inner_test():
+    return 1
 
 @not_implemented_for('multigraph')
 def _directed_triangles_and_degree_iter(G, nodes=None):
@@ -135,6 +137,45 @@ def _directed_triangles_and_degree_iter(G, nodes=None):
         dtotal = len(ipreds) + len(isuccs)
         dbidirectional = len(ipreds & isuccs)
         yield (i, dtotal, dbidirectional, directed_triangles)
+
+# for closure-co
+def _directed_triangles_opentriads_and_degree_iter(G, nodes=None):
+    """ Return an iterator of
+    (node, total_degree, reciprocal_degree, directed_triangles, open_triads).
+
+    Used for directed clustering and closure.
+
+    """
+    nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
+
+    for i, preds, succs in nodes_nbrs:
+        ipreds = set(preds) - {i}
+        isuccs = set(succs) - {i}
+
+        directed_triangles = 0
+        for j in chain(ipreds, isuccs):
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            directed_triangles += sum(1 for k in
+                                       chain((ipreds & jpreds),
+                                             (ipreds & jsuccs),
+                                             (isuccs & jpreds),
+                                             (isuccs & jsuccs)))
+        open_triads = 0
+        for j in ipreds & isuccs:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+            open_triads += 4 * (dj - 2)
+        for j in ((ipreds | isuccs) - (ipreds & isuccs)):
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+            open_triads += 2 * (dj - 1)
+
+        dtotal = len(ipreds) + len(isuccs)
+        dbidirectional = len(ipreds & isuccs)
+        yield (i, dtotal, dbidirectional, directed_triangles, open_triads)
 
 
 @not_implemented_for('multigraph')
@@ -247,6 +288,40 @@ def average_clustering(G, nodes=None, weight=None, count_zeros=True):
         c = [v for v in c if v > 0]
     return sum(c) / len(c)
 
+# for closure-co
+def average_closure(G, nodes=None, weight=None, count_zeros=True):
+    r"""Compute the average closure coefficient for the graph G.
+
+    Parameters
+    ----------
+    G : graph
+
+    nodes : container of nodes, optional (default=all nodes in G)
+       Compute average clustering for nodes in this container.
+
+    weight : string or None, optional (default=None)
+       The edge attribute that holds the numerical value used as a weight.
+       If None, then each edge has weight 1.
+
+    count_zeros : bool
+       If False include only the nodes with nonzero clustering in the average.
+
+    Returns
+    -------
+    avg : float
+       Average clustering
+
+    Examples
+    --------
+    >>> G=nx.complete_graph(5)
+    >>> print(nx.average_clustering(G))
+    1.0
+    """
+    c = closure(G, nodes, weight=weight).values()
+    if not count_zeros:
+        c = [v for v in c if v > 0]
+    return sum(c) / len(c)
+
 
 def clustering(G, nodes=None, weight=None):
     r"""Compute the clustering coefficient for nodes.
@@ -352,6 +427,64 @@ def clustering(G, nodes=None, weight=None):
         # Return the value of the sole entry in the dictionary.
         return clusterc[nodes]
     return clusterc
+
+# for closure-co, TODO solve weighted
+def closure(G, nodes=None, weight=None):
+    r"""Compute the closure coefficient for nodes.
+
+    Parameters
+    ----------
+    G : graph
+
+    nodes : container of nodes, optional (default=all nodes in G)
+       Compute clustering for nodes in this container.
+
+    weight : string or None, optional (default=None)
+       The edge attribute that holds the numerical value used as a weight.
+       If None, then each edge has weight 1.
+
+    Returns
+    -------
+    out : float, or dictionary
+       Closure coefficient at specified nodes
+
+    Examples
+    --------
+    >>> G=nx.complete_graph(5)
+    >>> print(nx.clustering(G,0))
+    1.0
+    >>> print(nx.clustering(G))
+    {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0}
+
+    Notes
+    -----
+    Self loops are ignored.
+    """
+    if G.is_directed():
+        if weight is not None:
+            pass
+            # td_iter = _directed_weighted_triangles_and_degree_iter(
+            #     G, nodes, weight)
+            # clusterc = {v: 0 if t == 0 else t / ((dt * (dt - 1) - 2 * db) * 2)
+            #             for v, dt, db, t in td_iter}
+        else:
+            td_iter = _directed_triangles_opentriads_and_degree_iter(G, nodes)
+            closurec = {v: 0 if t == 0 else t / (ot * 2)
+                        for v, dt, db, t, ot in td_iter}
+    # else:
+    #     if weight is not None:
+    #         td_iter = _weighted_triangles_and_degree_iter(G, nodes, weight)
+    #         clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
+    #                     v, d, t in td_iter}
+    #     else:
+    #         td_iter = _triangles_and_degree_iter(G, nodes)
+    #         clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
+    #                     v, d, t, _ in td_iter}
+    if nodes in G:
+        # Return the value of the sole entry in the dictionary.
+        return closurec[nodes]
+    return closurec
+
 
 
 def transitivity(G):
