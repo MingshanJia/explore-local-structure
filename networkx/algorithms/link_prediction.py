@@ -8,7 +8,8 @@ from math import log
 import networkx as nx
 from networkx.utils import not_implemented_for
 
-__all__ = ['resource_allocation_index',
+__all__ = ['common_neighbor_index',
+           'resource_allocation_index',
            'jaccard_coefficient',
            'adamic_adar_index',
            'preferential_attachment',
@@ -17,6 +18,7 @@ __all__ = ['resource_allocation_index',
            'within_inter_cluster']
 
 
+# ChangeNote: return sorted 3-tuple list, according to function score
 def _apply_prediction(G, func, ebunch=None):
     """Applies the given function to each edge in the specified iterable
     of edges.
@@ -34,10 +36,21 @@ def _apply_prediction(G, func, ebunch=None):
     """
     if ebunch is None:
         ebunch = nx.non_edges(G)
-    return ((u, v, func(u, v)) for u, v in ebunch)
+    return sorted([(u, v, func(G, u, v)) for u, v in ebunch], key = lambda t:t[2], reverse = True)
 
+# ChangeNote: newly introduced
+def common_neighbor_index(G, ebunch=None):
 
-@not_implemented_for('directed')
+    def predict(G, u, v):
+        if G.is_directed():
+            return len(list(nx.directed_common_neighbors(G, u, v)))
+        else:
+            return len(list(nx.common_neighbors(G, u, v)))
+
+    return _apply_prediction(G, predict, ebunch)
+
+# ChangeNote: include directed
+#@not_implemented_for('directed')
 @not_implemented_for('multigraph')
 def resource_allocation_index(G, ebunch=None):
     r"""Compute the resource allocation index of all node pairs in ebunch.
@@ -68,16 +81,6 @@ def resource_allocation_index(G, ebunch=None):
         An iterator of 3-tuples in the form (u, v, p) where (u, v) is a
         pair of nodes and p is their resource allocation index.
 
-    Examples
-    --------
-    >>> import networkx as nx
-    >>> G = nx.complete_graph(5)
-    >>> preds = nx.resource_allocation_index(G, [(0, 1), (2, 3)])
-    >>> for u, v, p in preds:
-    ...     print(f'({u}, {v}) -> {p:.8f}')
-    (0, 1) -> 0.75000000
-    (2, 3) -> 0.75000000
-
     References
     ----------
     .. [1] T. Zhou, L. Lu, Y.-C. Zhang.
@@ -85,12 +88,17 @@ def resource_allocation_index(G, ebunch=None):
        Eur. Phys. J. B 71 (2009) 623.
        https://arxiv.org/pdf/0901.0553.pdf
     """
-    def predict(u, v):
-        return sum(1 / G.degree(w) for w in nx.common_neighbors(G, u, v))
+    def predict(G, u, v):
+        if G.is_directed():
+            return sum(1 / G.degree(w) for w in nx.directed_common_neighbors(G, u, v))
+        else:
+            return sum(1 / G.degree(w) for w in nx.common_neighbors(G, u, v))
+
     return _apply_prediction(G, predict, ebunch)
 
 
-@not_implemented_for('directed')
+# ChangeNote: include directed
+#@not_implemented_for('directed')
 @not_implemented_for('multigraph')
 def jaccard_coefficient(G, ebunch=None):
     r"""Compute the Jaccard coefficient of all node pairs in ebunch.
@@ -121,31 +129,29 @@ def jaccard_coefficient(G, ebunch=None):
         An iterator of 3-tuples in the form (u, v, p) where (u, v) is a
         pair of nodes and p is their Jaccard coefficient.
 
-    Examples
-    --------
-    >>> import networkx as nx
-    >>> G = nx.complete_graph(5)
-    >>> preds = nx.jaccard_coefficient(G, [(0, 1), (2, 3)])
-    >>> for u, v, p in preds:
-    ...     print(f'({u}, {v}) -> {p:.8f}')
-    (0, 1) -> 0.60000000
-    (2, 3) -> 0.60000000
-
     References
     ----------
     .. [1] D. Liben-Nowell, J. Kleinberg.
            The Link Prediction Problem for Social Networks (2004).
            http://www.cs.cornell.edu/home/kleinber/link-pred.pdf
     """
-    def predict(u, v):
-        union_size = len(set(G[u]) | set(G[v]))
-        if union_size == 0:
-            return 0
-        return len(list(nx.common_neighbors(G, u, v))) / union_size
+    def predict(G, u, v):
+        if G.is_directed():
+            union_size = len(set(G._succ[u]) | set(G._pred[v]))
+            if union_size == 0:
+                return 0
+            return len(list(nx.directed_common_neighbors(G, u, v))) / union_size
+        else:
+            union_size = len(set(G[u]) | set(G[v]))
+            if union_size == 0:
+                return 0
+            return len(list(nx.common_neighbors(G, u, v))) / union_size
+
     return _apply_prediction(G, predict, ebunch)
 
 
-@not_implemented_for('directed')
+# ChangeNote: include directed
+#@not_implemented_for('directed')
 @not_implemented_for('multigraph')
 def adamic_adar_index(G, ebunch=None):
     r"""Compute the Adamic-Adar index of all node pairs in ebunch.
@@ -178,24 +184,18 @@ def adamic_adar_index(G, ebunch=None):
         An iterator of 3-tuples in the form (u, v, p) where (u, v) is a
         pair of nodes and p is their Adamic-Adar index.
 
-    Examples
-    --------
-    >>> import networkx as nx
-    >>> G = nx.complete_graph(5)
-    >>> preds = nx.adamic_adar_index(G, [(0, 1), (2, 3)])
-    >>> for u, v, p in preds:
-    ...     print(f'({u}, {v}) -> {p:.8f}')
-    (0, 1) -> 2.16404256
-    (2, 3) -> 2.16404256
-
     References
     ----------
     .. [1] D. Liben-Nowell, J. Kleinberg.
            The Link Prediction Problem for Social Networks (2004).
            http://www.cs.cornell.edu/home/kleinber/link-pred.pdf
     """
-    def predict(u, v):
-        return sum(1 / log(G.degree(w)) for w in nx.common_neighbors(G, u, v))
+    def predict(G, u, v):
+        if G.is_directed():
+            return sum(1 / log(G.degree(w)) for w in nx.directed_common_neighbors(G, u, v))
+        else:
+            return sum(1 / log(G.degree(w)) for w in nx.common_neighbors(G, u, v))
+
     return _apply_prediction(G, predict, ebunch)
 
 

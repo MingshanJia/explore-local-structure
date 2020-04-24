@@ -7,7 +7,7 @@ from collections import Counter
 from networkx.utils import not_implemented_for
 
 __all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity',
-           'square_clustering', 'generalized_degree']
+           'square_clustering', 'generalized_degree', 'average_closure', 'closure']
 
 
 @not_implemented_for('directed')
