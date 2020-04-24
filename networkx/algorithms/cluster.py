@@ -75,7 +75,7 @@ def _triangles_and_degree_iter(G, nodes=None):
 
 # for clo-co
 @not_implemented_for('multigraph')
-def _triangles_opentriads_and_degree_iter(G, nodes=None):
+def _triangles_and_opentriads_iter(G, nodes=None):
     """ Return an iterator of (node, degree, triangles, opentriads, generalized degree).
 
     This double counts triangles so you may want to divide by 2.
@@ -97,7 +97,7 @@ def _triangles_opentriads_and_degree_iter(G, nodes=None):
 
         gen_degree = Counter(len(vs & (set(G[w]) - {w})) for w in vs)
         ntriangles = sum(k * val for k, val in gen_degree.items())
-        yield (v, len(vs), ntriangles, ot, gen_degree)
+        yield (v, ntriangles, ot)
 
 
 @not_implemented_for('multigraph')
@@ -134,8 +134,6 @@ def _weighted_triangles_and_degree_iter(G, nodes=None, weight='weight'):
                                       for k in inbrs & jnbrs)
         yield (i, len(inbrs), 2 * weighted_triangles)
 
-def _inner_test():
-    return 1
 
 @not_implemented_for('multigraph')
 def _directed_triangles_and_degree_iter(G, nodes=None):
@@ -165,7 +163,7 @@ def _directed_triangles_and_degree_iter(G, nodes=None):
         yield (i, dtotal, dbidirectional, directed_triangles)
 
 # for closure-co
-def _directed_triangles_opentriads_and_degree_iter(G, nodes=None):
+def _directed_triangles_and_opentriads_iter(G, nodes=None):
     """ Return an iterator of
     (node, total_degree, reciprocal_degree, directed_triangles, open_triads).
 
@@ -207,9 +205,7 @@ def _directed_triangles_opentriads_and_degree_iter(G, nodes=None):
             dj = len(jpreds) + len(jsuccs)
             open_triads += 2 * (dj - 1)
 
-        dtotal = len(ipreds) + len(isuccs)
-        dbidirectional = len(ipreds & isuccs)
-        yield (i, dtotal, dbidirectional, directed_triangles, ts, tt, open_triads)
+        yield (i, directed_triangles, ts, tt, open_triads)
 
 
 @not_implemented_for('multigraph')
@@ -262,6 +258,69 @@ def _directed_weighted_triangles_and_degree_iter(G, nodes=None, weight='weight')
         dtotal = len(ipreds) + len(isuccs)
         dbidirectional = len(ipreds & isuccs)
         yield (i, dtotal, dbidirectional, directed_triangles)
+
+
+# for clo-co
+@not_implemented_for('multigraph')
+def _directed_weighted_triangles_and_opentriads_iter(G, nodes=None, weight='weight'):
+    """ Return an iterator of
+    (node, total_degree, reciprocal_degree, directed_weighted_triangles).
+
+    Used for directed weighted clustering.
+
+    """
+    if weight is None or G.number_of_edges() == 0:
+        max_weight = 1
+    else:
+        max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
+
+    # normalize weight in [0,1]
+    for u, v, data in G.edges(data=True):
+        data[weight] /= max_weight
+
+    nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
+
+    def wt(u, v):
+        return G[u][v].get(weight, 1)
+
+    for i, preds, succs in nodes_nbrs:
+        ipreds = set(preds) - {i}
+        isuccs = set(succs) - {i}
+
+        directed_triangles = 0
+        for j in ipreds:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            directed_triangles += sum((wt(j, i) * wt(k, i) * wt(k, j))
+                                      for k in ipreds & jpreds)
+            directed_triangles += sum((wt(j, i) * wt(k, i) * wt(j, k))
+                                      for k in ipreds & jsuccs)
+            directed_triangles += sum((wt(j, i) * wt(i, k) * wt(k, j))
+                                      for k in isuccs & jpreds)
+            directed_triangles += sum((wt(j, i) * wt(i, k) * wt(j, k))
+                                      for k in isuccs & jsuccs)
+
+        for j in isuccs:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            directed_triangles += sum((wt(i, j) * wt(k, i) * wt(k, j))
+                                      for k in ipreds & jpreds)
+            directed_triangles += sum((wt(i, j) * wt(k, i) * wt(j, k))
+                                      for k in ipreds & jsuccs)
+            directed_triangles += sum((wt(i, j) * wt(i, k) * wt(k, j))
+                                      for k in isuccs & jpreds)
+            directed_triangles += sum((wt(i, j) * wt(i, k) * wt(j, k))
+                                      for k in isuccs & jsuccs)
+        # three conditions
+        ot = 0
+        for j in ipreds & isuccs:
+            ot += 2 * (wt(i, j) + wt(j, i)) * (G.degree(j, weight) - (wt(i, j) + wt(j, i)))
+        for j in isuccs - (ipreds & isuccs):
+            ot += 2 * wt(i, j) * (G.degree(j, weight) - wt(i, j))
+        for j in ipreds - (ipreds & isuccs):
+            ot += 2 * wt(j, i) * (G.degree(j, weight) - wt(j, i))
+
+        yield (i, directed_triangles, ot)
 
 
 def average_clustering(G, nodes=None, weight=None, count_zeros=True):
@@ -322,7 +381,7 @@ def average_clustering(G, nodes=None, weight=None, count_zeros=True):
         c = [v for v in c if v > 0]
     return sum(c) / len(c)
 
-# for closure-co TODO
+# for closure-co
 def average_closure(G, nodes=None, weight=None, count_zeros=True):
     r"""Compute the average closure coefficient for the graph G.
 
@@ -468,7 +527,8 @@ def clustering(G, nodes=None, weight=None):
         return clusterc[nodes]
     return clusterc
 
-# for closure-co, TODO solve weighted
+
+# KEYFUNC: for closure-co
 def closure(G, nodes=None, weight=None):
     r"""Compute the closure coefficient for nodes.
 
@@ -487,33 +547,22 @@ def closure(G, nodes=None, weight=None):
     -------
     {node: [clo, src-clo, tgt-clo]}
 
-    Examples
-    --------
-    >>> G=nx.complete_graph(5)
-    >>> print(nx.clustering(G,0))
-    1.0
-    >>> print(nx.clustering(G))
-    {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0}
-
-    Notes
-    -----
-    Self loops are ignored.
+    Notes: Self loops are ignored.
     """
     if G.is_directed():
         if weight is not None:
-            pass
-            # td_iter = _directed_weighted_triangles_and_degree_iter(
-            #     G, nodes, weight)
-            # clusterc = {v: 0 if t == 0 else t / ((dt * (dt - 1) - 2 * db) * 2)
-            #             for v, dt, db, t in td_iter}
+            td_iter = _directed_weighted_triangles_and_opentriads_iter(G, nodes, weight)
+            closurec = {v: [0] if t == 0 else [t / ot]
+                        for v, t, ot in td_iter}
         else:
-            td_iter = _directed_triangles_opentriads_and_degree_iter(G, nodes)
+            td_iter = _directed_triangles_and_opentriads_iter(G, nodes)
 
             closurec = {v: [0, 0, 0] if (ts == 0 and tt == 0) else [t / ot, ts / ot, tt / ot]
-                        for v, dt, db, t, ts, tt, ot in td_iter}
+                        for v, t, ts, tt, ot in td_iter}
 
             # closurec = {v: 0 if t == 0 else t / ot
             #             for v, dt, db, t, ot in td_iter}
+    # undirected:
     else:
         if weight is not None:
             pass
@@ -521,9 +570,9 @@ def closure(G, nodes=None, weight=None):
             # clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
             #             v, d, t in td_iter}
         else:
-            td_iter = _triangles_opentriads_and_degree_iter(G, nodes)
+            td_iter = _triangles_and_opentriads_iter(G, nodes)
             closurec = {v: [0] if t == 0 else [t / ot] for
-                        v, d, t, ot, _ in td_iter}
+                        v, t, ot in td_iter}
     if nodes in G:
         # Return the value of the sole entry in the dictionary.
         return closurec[nodes]
