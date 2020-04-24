@@ -167,7 +167,7 @@ def _directed_triangles_opentriads_and_degree_iter(G, nodes=None):
                       chain((ipreds & jpreds),
                             (ipreds & jsuccs)))
 
-            directed_triangles += (ts + tt)
+        directed_triangles += (ts + tt)
 
         open_triads = 0
         for j in ipreds & isuccs:
@@ -325,7 +325,7 @@ def average_closure(G, nodes=None, weight=None, count_zeros=True):
     >>> print(nx.average_clustering(G))
     1.0
     """
-    ce_all_dict = closure(G, nodes, weight=weight).values()
+    ce_all_dict = closure(G, nodes, weight=weight)
     ce_dict = dict()
     for k, v in ce_all_dict.items():
         ce_dict[k] = v[0]
