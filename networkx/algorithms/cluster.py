@@ -73,6 +73,32 @@ def _triangles_and_degree_iter(G, nodes=None):
         ntriangles = sum(k * val for k, val in gen_degree.items())
         yield (v, len(vs), ntriangles, gen_degree)
 
+# for clo-co
+@not_implemented_for('multigraph')
+def _triangles_opentriads_and_degree_iter(G, nodes=None):
+    """ Return an iterator of (node, degree, triangles, opentriads, generalized degree).
+
+    This double counts triangles so you may want to divide by 2.
+    See degree(), triangles() and generalized_degree() for definitions
+    and details.
+
+    """
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    for v, v_nbrs in nodes_nbrs:
+        vs = set(v_nbrs) - {v}
+        ot = 0
+        for w in vs:
+            ns = set(G[w]) - {w}
+            ot += len(ns) - 1
+
+        gen_degree = Counter(len(vs & (set(G[w]) - {w})) for w in vs)
+        ntriangles = sum(k * val for k, val in gen_degree.items())
+        yield (v, len(vs), ntriangles, ot, gen_degree)
+
 
 @not_implemented_for('multigraph')
 def _weighted_triangles_and_degree_iter(G, nodes=None, weight='weight'):
@@ -296,7 +322,7 @@ def average_clustering(G, nodes=None, weight=None, count_zeros=True):
         c = [v for v in c if v > 0]
     return sum(c) / len(c)
 
-# for closure-co
+# for closure-co TODO
 def average_closure(G, nodes=None, weight=None, count_zeros=True):
     r"""Compute the average closure coefficient for the graph G.
 
@@ -442,7 +468,7 @@ def clustering(G, nodes=None, weight=None):
         return clusterc[nodes]
     return clusterc
 
-# for closure-co, TODO solve weighted, undirected
+# for closure-co, TODO solve weighted
 def closure(G, nodes=None, weight=None):
     r"""Compute the closure coefficient for nodes.
 
@@ -488,15 +514,16 @@ def closure(G, nodes=None, weight=None):
 
             # closurec = {v: 0 if t == 0 else t / ot
             #             for v, dt, db, t, ot in td_iter}
-    # else:
-    #     if weight is not None:
-    #         td_iter = _weighted_triangles_and_degree_iter(G, nodes, weight)
-    #         clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
-    #                     v, d, t in td_iter}
-    #     else:
-    #         td_iter = _triangles_and_degree_iter(G, nodes)
-    #         clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
-    #                     v, d, t, _ in td_iter}
+    else:
+        if weight is not None:
+            pass
+            # td_iter = _weighted_triangles_and_degree_iter(G, nodes, weight)
+            # clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
+            #             v, d, t in td_iter}
+        else:
+            td_iter = _triangles_opentriads_and_degree_iter(G, nodes)
+            closurec = {v: [0] if t == 0 else [t / ot] for
+                        v, d, t, ot, _ in td_iter}
     if nodes in G:
         # Return the value of the sole entry in the dictionary.
         return closurec[nodes]
