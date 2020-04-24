@@ -152,15 +152,23 @@ def _directed_triangles_opentriads_and_degree_iter(G, nodes=None):
         ipreds = set(preds) - {i}
         isuccs = set(succs) - {i}
 
+        ts = 0
+        tt = 0
         directed_triangles = 0
         for j in chain(ipreds, isuccs):
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
-            directed_triangles += sum(1 for k in
-                                       chain((ipreds & jpreds),
-                                             (ipreds & jsuccs),
-                                             (isuccs & jpreds),
-                                             (isuccs & jsuccs)))
+
+            ts += sum(1 for k in
+                      chain((isuccs & jpreds),
+                            (isuccs & jsuccs)))
+
+            tt += sum(1 for k in
+                      chain((ipreds & jpreds),
+                            (ipreds & jsuccs)))
+
+            directed_triangles += (ts + tt)
+
         open_triads = 0
         for j in ipreds & isuccs:
             jpreds = set(G._pred[j]) - {j}
@@ -175,7 +183,7 @@ def _directed_triangles_opentriads_and_degree_iter(G, nodes=None):
 
         dtotal = len(ipreds) + len(isuccs)
         dbidirectional = len(ipreds & isuccs)
-        yield (i, dtotal, dbidirectional, directed_triangles, open_triads)
+        yield (i, dtotal, dbidirectional, directed_triangles, ts, tt, open_triads)
 
 
 @not_implemented_for('multigraph')
@@ -317,10 +325,16 @@ def average_closure(G, nodes=None, weight=None, count_zeros=True):
     >>> print(nx.average_clustering(G))
     1.0
     """
-    c = closure(G, nodes, weight=weight).values()
+    ce_all_dict = closure(G, nodes, weight=weight).values()
+    ce_dict = dict()
+    for k, v in ce_all_dict.items():
+        ce_dict[k] = v[0]
+
+    ce = ce_dict.values()
+
     if not count_zeros:
-        c = [v for v in c if v > 0]
-    return sum(c) / len(c)
+        ce = [v for v in ce if v > 0]
+    return sum(ce) / len(ce)
 
 
 def clustering(G, nodes=None, weight=None):
@@ -428,7 +442,7 @@ def clustering(G, nodes=None, weight=None):
         return clusterc[nodes]
     return clusterc
 
-# for closure-co, TODO solve weighted
+# for closure-co, TODO solve weighted, undirected
 def closure(G, nodes=None, weight=None):
     r"""Compute the closure coefficient for nodes.
 
@@ -445,8 +459,7 @@ def closure(G, nodes=None, weight=None):
 
     Returns
     -------
-    out : float, or dictionary
-       Closure coefficient at specified nodes
+    {node: [clo, src-clo, tgt-clo]}
 
     Examples
     --------
@@ -469,8 +482,12 @@ def closure(G, nodes=None, weight=None):
             #             for v, dt, db, t in td_iter}
         else:
             td_iter = _directed_triangles_opentriads_and_degree_iter(G, nodes)
-            closurec = {v: 0 if t == 0 else t / ot
-                        for v, dt, db, t, ot in td_iter}
+
+            closurec = {v: [0, 0, 0] if (ts == 0 and tt == 0) else [t / ot, ts / ot, tt / ot]
+                        for v, dt, db, t, ts, tt, ot in td_iter}
+
+            # closurec = {v: 0 if t == 0 else t / ot
+            #             for v, dt, db, t, ot in td_iter}
     # else:
     #     if weight is not None:
     #         td_iter = _weighted_triangles_and_degree_iter(G, nodes, weight)
