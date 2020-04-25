@@ -545,7 +545,7 @@ def closure(G, nodes=None, weight=None):
 
     Returns
     -------
-    {node: [clo, src-clo, tgt-clo]}
+    {v: [clo, src-clo, tgt-clo]}  for directed, unweighted network, it is three tuple, used in directed link prediction
 
     Notes: Self loops are ignored.
     """

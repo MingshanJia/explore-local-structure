@@ -9,13 +9,43 @@ import networkx as nx
 from networkx.utils import not_implemented_for
 
 __all__ = ['common_neighbor_index',
+           'closure_similarity_index',
+           'closure_similarity_index_two',
            'resource_allocation_index',
            'jaccard_coefficient',
            'adamic_adar_index',
            'preferential_attachment',
            'cn_soundarajan_hopcroft',
            'ra_index_soundarajan_hopcroft',
-           'within_inter_cluster']
+           'within_inter_cluster',
+           'perform_link_prediction']
+
+
+# KeyFunc: return prediction precision
+def perform_link_prediction(G_old, G_new, method, dict_ce):
+    G_new = G_new.subgraph(G_old.nodes())
+    k = G_new.number_of_edges()    # number of links chosen from prediction, also number of links in ground truth
+
+    if method == 'cn':
+        pred_links = common_neighbor_index(G_old)[0 : k]
+    if method == 'ja':
+        pred_links = jaccard_coefficient(G_old)[0 : k]
+    if method == 'aa':
+        pred_links = adamic_adar_index(G_old)[0 : k]
+    if method == 'ra':
+        pred_links = resource_allocation_index(G_old)[0 : k]
+    if method == 'clo1':
+        pred_links = closure_similarity_index(G_old, dict_ce)[0 : k]
+    # clo2 is only for directed network
+    if method == 'clo2':
+        pred_links = closure_similarity_index_two(G_old, dict_ce)[0 : k]
+
+    correct = 0
+    for e in pred_links:
+        if (e[0], e[1]) in G_new.edges():
+            correct += 1
+    return 100 * correct / k
+
 
 
 # ChangeNote: return sorted 3-tuple list, according to function score
@@ -25,11 +55,6 @@ def _apply_prediction(G, func, ebunch=None):
 
     `G` is an instance of :class:`networkx.Graph`.
 
-    `func` is a function on two inputs, each of which is a node in the
-    graph. The function can return anything, but it should return a
-    value representing a prediction of the likelihood of a "link"
-    joining the two nodes.
-
     `ebunch` is an iterable of pairs of nodes. If not specified, all
     non-edges in the graph `G` will be used.
 
@@ -38,7 +63,8 @@ def _apply_prediction(G, func, ebunch=None):
         ebunch = nx.non_edges(G)
     return sorted([(u, v, func(G, u, v)) for u, v in ebunch], key = lambda t:t[2], reverse = True)
 
-# ChangeNote: newly introduced
+
+# ChangeNote: newly added
 def common_neighbor_index(G, ebunch=None):
 
     def predict(G, u, v):
@@ -48,6 +74,28 @@ def common_neighbor_index(G, ebunch=None):
             return len(list(nx.common_neighbors(G, u, v)))
 
     return _apply_prediction(G, predict, ebunch)
+
+
+# KeyFunc: newly introduced
+def closure_similarity_index(G, dict_ce, ebunch=None):
+# dict_Ce: {v: [clo, src_clo, tgt_clo]}
+    def predict(G, u, v):
+        if G.is_directed():
+            return len(list(nx.directed_common_neighbors(G, u, v))) * (dict_ce[u][1] + dict_ce[v][2])
+        else:
+            return len(list(nx.common_neighbors(G, u, v))) * (dict_ce[u][0] + dict_ce[v][0])
+
+    return _apply_prediction(G, predict, ebunch)
+
+
+# KeyFunc: only for directed network
+def closure_similarity_index_two(G, dict_ce, ebunch=None):
+# dict_Ce: {v: [clo, src_clo, tgt_clo]}
+    def predict(G, u, v):
+        return len(list(nx.directed_common_neighbors_two(G, u, v))) * (dict_ce[u][1] + dict_ce[v][2])
+
+    return _apply_prediction(G, predict, ebunch)
+
 
 # ChangeNote: include directed
 #@not_implemented_for('directed')
