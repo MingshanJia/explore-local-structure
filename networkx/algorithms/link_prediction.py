@@ -8,6 +8,7 @@ from math import log
 import networkx as nx
 from networkx.utils import not_implemented_for
 
+
 __all__ = ['common_neighbor_index',
            'closure_similarity_index',
            'closure_similarity_index_two',
