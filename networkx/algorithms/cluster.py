@@ -3,6 +3,7 @@
 from itertools import chain
 from itertools import combinations
 from collections import Counter
+import networkx as nx
 
 from networkx.utils import not_implemented_for
 
@@ -278,6 +279,13 @@ def _directed_weighted_triangles_and_opentriads_iter(G, nodes=None, weight='weig
     for u, v, data in G.edges(data=True):
         data[weight] /= max_weight
 
+    # for signed weighted, get a copy of G with weight in absolute value
+    G_abs = nx.DiGraph()
+    e_list = list(G.edges(data=True))
+    G_abs.add_edges_from(e_list)
+    for u, v, data in G_abs.edges(data=True):
+        data[weight] = abs(data[weight])
+
     nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
 
     def wt(u, v):
@@ -314,11 +322,11 @@ def _directed_weighted_triangles_and_opentriads_iter(G, nodes=None, weight='weig
         # three conditions
         ot = 0
         for j in ipreds & isuccs:
-            ot += 2 * (wt(i, j) + wt(j, i)) * (G.degree(j, weight) - (wt(i, j) + wt(j, i)))
+            ot += 2 * (abs(wt(i, j)) + abs(wt(j, i))) * (G_abs.degree(j, weight) - (abs(wt(i, j)) + abs(wt(j, i))))
         for j in isuccs - (ipreds & isuccs):
-            ot += 2 * wt(i, j) * (G.degree(j, weight) - wt(i, j))
+            ot += 2 * abs(wt(i, j)) * (G_abs.degree(j, weight) - abs(wt(i, j)))
         for j in ipreds - (ipreds & isuccs):
-            ot += 2 * wt(j, i) * (G.degree(j, weight) - wt(j, i))
+            ot += 2 * abs(wt(j, i)) * (G_abs.degree(j, weight) - abs(wt(j, i)))
 
         yield (i, directed_triangles, ot)
 

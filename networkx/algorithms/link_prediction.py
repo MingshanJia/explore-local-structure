@@ -13,6 +13,7 @@ __all__ = ['random_guess',
            'common_neighbor_index',
            'closure_similarity_index',
            'closure_similarity_index_two',
+           'closure_similarity_index_three',
            'resource_allocation_index',
            'jaccard_coefficient',
            'adamic_adar_index',
@@ -38,9 +39,11 @@ def perform_link_prediction(G_old, G_new, method, dict_ce):
         pred_links = resource_allocation_index(G_old)[0 : k]
     if method == 'clo1':
         pred_links = closure_similarity_index(G_old, dict_ce)[0 : k]
-    # clo2 is only for directed network
     if method == 'clo2':
         pred_links = closure_similarity_index_two(G_old, dict_ce)[0 : k]
+    # clo3 is only for directed network
+    # if method == 'clo3':
+    #     pred_links = closure_similarity_index_three(G_old, dict_ce)[0 : k]
 
     correct = 0
     for e in pred_links:
@@ -54,7 +57,7 @@ def random_guess(G_old, G_new):
     G_new = G_new.subgraph(G_old.nodes())
     k = G_new.number_of_edges()  # number of links chosen from prediction, also number of links in ground truth
     possible_num_edges = len(list(nx.non_edges(G_old)))
-    return k / possible_num_edges
+    return k * 100 / possible_num_edges
 
 
 # ChangeNote: return sorted 3-tuple list, according to function score
@@ -104,6 +107,20 @@ def closure_similarity_index_two(G, dict_ce, ebunch=None):
         return len(list(nx.directed_common_neighbors_two(G, u, v))) * (dict_ce[u][1] + dict_ce[v][2])
 
     return _apply_prediction(G, predict, ebunch)
+
+
+# KeyFunc: newly introduced
+def closure_similarity_index_three(G, dict_ce, ebunch=None):
+# dict_Ce: {v: [clo, src_clo, tgt_clo]}
+    def predict(G, u, v):
+        if G.is_directed():
+            return sum(dict_ce[w][0] for w in nx.directed_common_neighbors(G, u, v))
+        else:
+            return sum(dict_ce[w][0] for w in nx.common_neighbors(G, u, v))
+
+    return _apply_prediction(G, predict, ebunch)
+
+
 
 
 # ChangeNote: include directed
