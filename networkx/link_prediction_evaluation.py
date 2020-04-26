@@ -8,6 +8,7 @@ def link_pred_app(G, repeat=1, old_pct=0.5):
     print('old edges percentage: %.1f' % old_pct)
     print('repeat time: %d' % repeat)
     res = []
+    rg = 0 #random guess
     cn = 0
     aa = 0
     ra = 0
@@ -34,6 +35,8 @@ def link_pred_app(G, repeat=1, old_pct=0.5):
 
         dict_ce = nx.closure(G_old)
 
+        rg += nx.random_guess(G_old, G_new)
+        print('rg: %.3f' % (rg))
         cn += nx.perform_link_prediction(G_old, G_new, 'cn', dict_ce)
         print('cn: %.3f' % (cn))
         aa += nx.perform_link_prediction(G_old, G_new, 'aa', dict_ce)
@@ -45,12 +48,14 @@ def link_pred_app(G, repeat=1, old_pct=0.5):
         clo2 += nx.perform_link_prediction(G_old, G_new, 'clo2', dict_ce)
         print('clo2: %.3f' % (clo2))
 
+    rg /= repeat
     cn /= repeat
     aa /= repeat
     ra /= repeat
     clo1 /= repeat
     clo2 /= repeat
 
+    res.append(rg)
     res.append(cn)
     res.append(aa)
     res.append(ra)

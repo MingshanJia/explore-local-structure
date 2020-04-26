@@ -9,7 +9,8 @@ import networkx as nx
 from networkx.utils import not_implemented_for
 
 
-__all__ = ['common_neighbor_index',
+__all__ = ['random_guess',
+           'common_neighbor_index',
            'closure_similarity_index',
            'closure_similarity_index_two',
            'resource_allocation_index',
@@ -47,6 +48,13 @@ def perform_link_prediction(G_old, G_new, method, dict_ce):
             correct += 1
     return 100 * correct / k
 
+
+# random guess precision
+def random_guess(G_old, G_new):
+    G_new = G_new.subgraph(G_old.nodes())
+    k = G_new.number_of_edges()  # number of links chosen from prediction, also number of links in ground truth
+    possible_num_edges = len(list(nx.non_edges(G_old)))
+    return k / possible_num_edges
 
 
 # ChangeNote: return sorted 3-tuple list, according to function score
