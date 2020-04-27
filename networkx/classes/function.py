@@ -988,10 +988,7 @@ def directed_common_neighbors_two(G, u, v):
     if v not in G:
         raise nx.NetworkXError('v is not in the graph.')
 
-    G._succ[u].update(G._pred[u])
-    G._pred[v].update(G._succ[v])
-
-    return (w for w in G._succ[u] if w in G._pred[v] and w not in (u, v))
+    return (w for w in nx.all_neighbors(G, u) if w in nx.all_neighbors(G, v) and w not in (u, v))
 
 
 def is_weighted(G, edge=None, weight='weight'):
