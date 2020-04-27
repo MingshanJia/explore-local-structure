@@ -101,14 +101,11 @@ def link_pred_sample_app(G, repeat=1, sample_time=5, old_pct=0.5):
         for i in range(0, sample_time):
             print('sample %d' % i)
 
-            if sample_time > 1:
-                random_edge = random.choice(e_old)
-                random_node = random_edge[0]
+            random_edge = random.choice(e_old)
+            random_node = random_edge[0]
 
-                sample_nodes = get_sample_nodes(G_old, random_node)
-                G_old_sampled = G_old.subgraph(sample_nodes)
-            else:
-                pass
+            sample_nodes = get_sample_nodes(G_old, random_node)
+            G_old_sampled = G_old.subgraph(sample_nodes)
 
             dict_ce = nx.closure(G_old_sampled)
 

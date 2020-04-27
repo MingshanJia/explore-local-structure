@@ -109,7 +109,7 @@ def closure_similarity_index_two(G, dict_ce, ebunch=None):
     return _apply_prediction(G, predict, ebunch)
 
 
-# KeyFunc: newly introduced
+# Not used.
 def closure_similarity_index_three(G, dict_ce, ebunch=None):
 # dict_Ce: {v: [clo, src_clo, tgt_clo]}
     def predict(G, u, v):
