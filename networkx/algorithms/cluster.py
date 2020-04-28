@@ -101,9 +101,45 @@ def _triangles_and_opentriads_iter(G, nodes=None):
         yield (v, ntriangles, ot)
 
 
+# @not_implemented_for('multigraph')
+# def _weighted_triangles_and_degree_iter(G, nodes=None, weight='weight'):
+#     """ Return an iterator of (node, degree, weighted_triangles).
+#
+#     Used for weighted clustering.
+#
+#     """
+#     if weight is None or G.number_of_edges() == 0:
+#         max_weight = 1
+#     else:
+#         max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
+#     if nodes is None:
+#         nodes_nbrs = G.adj.items()
+#     else:
+#         nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+#
+#     def wt(u, v):
+#         return G[u][v].get(weight, 1) / max_weight
+#
+#     for i, nbrs in nodes_nbrs:
+#         inbrs = set(nbrs) - {i}
+#         weighted_triangles = 0
+#         seen = set()
+#         for j in inbrs:
+#             seen.add(j)
+#             # This prevents double counting.    Note: prevent double here, but double later... funny..
+#             jnbrs = set(G[j]) - seen
+#             # Only compute the edge weight once, before the inner inner
+#             # loop.
+#             wij = wt(i, j)
+#             weighted_triangles += sum((wij * wt(j, k) * wt(k, i)) ** (1 / 3)
+#                                       for k in inbrs & jnbrs)
+#         yield (i, len(inbrs), 2 * weighted_triangles)
+
+
+# another way to calculate weighted clustering-co; to replace _weighted_triangles_and_degree_iter
 @not_implemented_for('multigraph')
-def _weighted_triangles_and_degree_iter(G, nodes=None, weight='weight'):
-    """ Return an iterator of (node, degree, weighted_triangles).
+def _weighted_triangles_and_otc_iter(G, nodes=None, weight='weight'):
+    """ Return an iterator of (node, weighted_triangles, weighted center-opentriads).
 
     Used for weighted clustering.
 
@@ -123,17 +159,23 @@ def _weighted_triangles_and_degree_iter(G, nodes=None, weight='weight'):
     for i, nbrs in nodes_nbrs:
         inbrs = set(nbrs) - {i}
         weighted_triangles = 0
+        weighted_center_opentriads = 0
         seen = set()
         for j in inbrs:
             seen.add(j)
-            # This prevents double counting.
+            # This prevents double counting.    Note: prevent double here, but double later... funny..
             jnbrs = set(G[j]) - seen
             # Only compute the edge weight once, before the inner inner
             # loop.
             wij = wt(i, j)
-            weighted_triangles += sum((wij * wt(j, k) * wt(k, i)) ** (1 / 3)
+            weighted_triangles += sum((wij * wt(j, k) * wt(k, i))
                                       for k in inbrs & jnbrs)
-        yield (i, len(inbrs), 2 * weighted_triangles)
+
+            weighted_center_opentriads += sum(wij * wt(i, k) for k in (inbrs - {j}))
+
+        yield (i, 2 * weighted_triangles, weighted_center_opentriads)
+
+
 
 
 @not_implemented_for('multigraph')
@@ -209,10 +251,63 @@ def _directed_triangles_and_opentriads_iter(G, nodes=None):
         yield (i, directed_triangles, ts, tt, open_triads)
 
 
+# @not_implemented_for('multigraph')
+# def _directed_weighted_triangles_and_degree_iter(G, nodes=None, weight='weight'):
+#     """ Return an iterator of
+#     (node, total_degree, reciprocal_degree, directed_weighted_triangles).
+#
+#     Used for directed weighted clustering.
+#
+#     """
+#     if weight is None or G.number_of_edges() == 0:
+#         max_weight = 1
+#     else:
+#         max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
+#
+#     nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
+#
+#     def wt(u, v):
+#         return G[u][v].get(weight, 1) / max_weight
+#
+#     for i, preds, succs in nodes_nbrs:
+#         ipreds = set(preds) - {i}
+#         isuccs = set(succs) - {i}
+#
+#         directed_triangles = 0
+#         for j in ipreds:
+#             jpreds = set(G._pred[j]) - {j}
+#             jsuccs = set(G._succ[j]) - {j}
+#             directed_triangles += sum((wt(j, i) * wt(k, i) * wt(k, j))**(1 / 3)
+#                                       for k in ipreds & jpreds)
+#             directed_triangles += sum((wt(j, i) * wt(k, i) * wt(j, k))**(1 / 3)
+#                                       for k in ipreds & jsuccs)
+#             directed_triangles += sum((wt(j, i) * wt(i, k) * wt(k, j))**(1 / 3)
+#                                       for k in isuccs & jpreds)
+#             directed_triangles += sum((wt(j, i) * wt(i, k) * wt(j, k))**(1 / 3)
+#                                       for k in isuccs & jsuccs)
+#
+#         for j in isuccs:
+#             jpreds = set(G._pred[j]) - {j}
+#             jsuccs = set(G._succ[j]) - {j}
+#             directed_triangles += sum((wt(i, j) * wt(k, i) * wt(k, j))**(1 / 3)
+#                                       for k in ipreds & jpreds)
+#             directed_triangles += sum((wt(i, j) * wt(k, i) * wt(j, k))**(1 / 3)
+#                                       for k in ipreds & jsuccs)
+#             directed_triangles += sum((wt(i, j) * wt(i, k) * wt(k, j))**(1 / 3)
+#                                       for k in isuccs & jpreds)
+#             directed_triangles += sum((wt(i, j) * wt(i, k) * wt(j, k))**(1 / 3)
+#                                       for k in isuccs & jsuccs)
+#
+#         dtotal = len(ipreds) + len(isuccs)
+#         dbidirectional = len(ipreds & isuccs)
+#         yield (i, dtotal, dbidirectional, directed_triangles)
+
+
+# another way to calculate weighted clustering co; replace _directed_weighted_triangles_and_degree_iter
 @not_implemented_for('multigraph')
-def _directed_weighted_triangles_and_degree_iter(G, nodes=None, weight='weight'):
+def _directed_weighted_triangles_and_otc(G, nodes=None, weight='weight'):
     """ Return an iterator of
-    (node, total_degree, reciprocal_degree, directed_weighted_triangles).
+    (node, directed_weighted_triangles, directed_weighted_center_opentriads).
 
     Used for directed weighted clustering.
 
@@ -232,33 +327,40 @@ def _directed_weighted_triangles_and_degree_iter(G, nodes=None, weight='weight')
         isuccs = set(succs) - {i}
 
         directed_triangles = 0
+        directed_center_opentriads = 0
         for j in ipreds:
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
-            directed_triangles += sum((wt(j, i) * wt(k, i) * wt(k, j))**(1 / 3)
+            directed_triangles += sum((wt(j, i) * wt(k, i) * wt(k, j))
                                       for k in ipreds & jpreds)
-            directed_triangles += sum((wt(j, i) * wt(k, i) * wt(j, k))**(1 / 3)
+            directed_triangles += sum((wt(j, i) * wt(k, i) * wt(j, k))
                                       for k in ipreds & jsuccs)
-            directed_triangles += sum((wt(j, i) * wt(i, k) * wt(k, j))**(1 / 3)
+            directed_triangles += sum((wt(j, i) * wt(i, k) * wt(k, j))
                                       for k in isuccs & jpreds)
-            directed_triangles += sum((wt(j, i) * wt(i, k) * wt(j, k))**(1 / 3)
+            directed_triangles += sum((wt(j, i) * wt(i, k) * wt(j, k))
                                       for k in isuccs & jsuccs)
+
+            directed_center_opentriads += sum(wt(j, i) * wt(k, i) for k in (ipreds - {j}))
+            directed_center_opentriads += sum(wt(j, i) * wt(i, k) for k in (isuccs - {j}))
+
 
         for j in isuccs:
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
-            directed_triangles += sum((wt(i, j) * wt(k, i) * wt(k, j))**(1 / 3)
+            directed_triangles += sum((wt(i, j) * wt(k, i) * wt(k, j))
                                       for k in ipreds & jpreds)
-            directed_triangles += sum((wt(i, j) * wt(k, i) * wt(j, k))**(1 / 3)
+            directed_triangles += sum((wt(i, j) * wt(k, i) * wt(j, k))
                                       for k in ipreds & jsuccs)
-            directed_triangles += sum((wt(i, j) * wt(i, k) * wt(k, j))**(1 / 3)
+            directed_triangles += sum((wt(i, j) * wt(i, k) * wt(k, j))
                                       for k in isuccs & jpreds)
-            directed_triangles += sum((wt(i, j) * wt(i, k) * wt(j, k))**(1 / 3)
+            directed_triangles += sum((wt(i, j) * wt(i, k) * wt(j, k))
                                       for k in isuccs & jsuccs)
 
-        dtotal = len(ipreds) + len(isuccs)
-        dbidirectional = len(ipreds & isuccs)
-        yield (i, dtotal, dbidirectional, directed_triangles)
+            directed_center_opentriads += sum(wt(i, j) * wt(k, i) for k in (ipreds - {j}))
+            directed_center_opentriads += sum(wt(i, j) * wt(i, k) for k in (isuccs - {j}))
+
+        yield (i, directed_triangles, directed_center_opentriads)
+
 
 
 # for clo-co
@@ -512,20 +614,22 @@ def clustering(G, nodes=None, weight=None):
        Physical Review E, 76(2), 026107 (2007).
     """
     if G.is_directed():
+        # change to another way
         if weight is not None:
-            td_iter = _directed_weighted_triangles_and_degree_iter(
+            td_iter = _directed_weighted_triangles_and_otc(
                 G, nodes, weight)
-            clusterc = {v: 0 if t == 0 else t / ((dt * (dt - 1) - 2 * db) * 2)
-                        for v, dt, db, t in td_iter}
+            clusterc = {v: 0 if t == 0 else t / (2 * otc)
+                        for v, t, otc in td_iter}
         else:
             td_iter = _directed_triangles_and_degree_iter(G, nodes)
             clusterc = {v: 0 if t == 0 else t / ((dt * (dt - 1) - 2 * db) * 2)
                         for v, dt, db, t in td_iter}
     else:
+        # change to another way
         if weight is not None:
-            td_iter = _weighted_triangles_and_degree_iter(G, nodes, weight)
-            clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
-                        v, d, t in td_iter}
+            td_iter = _weighted_triangles_and_otc_iter(G, nodes, weight)
+            clusterc = {v: 0 if t == 0 else t / otc for
+                        v, t, otc in td_iter}
         else:
             td_iter = _triangles_and_degree_iter(G, nodes)
             clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
