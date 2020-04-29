@@ -137,6 +137,7 @@ def _triangles_and_opentriads_iter(G, nodes=None):
 
 
 # another way to calculate weighted clustering-co; to replace _weighted_triangles_and_degree_iter
+# paper:A general framework for weighted gene co-expression  network  analysis
 @not_implemented_for('multigraph')
 def _weighted_triangles_and_otc_iter(G, nodes=None, weight='weight'):
     """ Return an iterator of (node, weighted_triangles, weighted center-opentriads).
@@ -304,6 +305,7 @@ def _directed_triangles_and_opentriads_iter(G, nodes=None):
 
 
 # another way to calculate weighted clustering co; replace _directed_weighted_triangles_and_degree_iter
+# paper:A general framework for weighted gene co-expression  network  analysis
 @not_implemented_for('multigraph')
 def _directed_weighted_triangles_and_otc(G, nodes=None, weight='weight'):
     """ Return an iterator of

@@ -2,7 +2,8 @@ import random
 import networkx as nx
 
 __all__ = ['link_pred_app',
-           'link_pred_sample_app']
+           'link_pred_sample_app',
+           'link_direction_prediction_app']
 
 
 # for not very large networks, nodes < 10K.
@@ -104,7 +105,7 @@ def link_pred_sample_app(G, repeat=1, sample_time=5, old_pct=0.5):
             random_edge = random.choice(e_old)
             random_node = random_edge[0]
 
-            sample_nodes = get_sample_nodes(G_old, random_node)
+            sample_nodes = get_sample_nodes(G_old, random_node, 1000)
             G_old_sampled = G_old.subgraph(sample_nodes)
 
             dict_ce = nx.closure(G_old_sampled)
@@ -139,15 +140,15 @@ def link_pred_sample_app(G, repeat=1, sample_time=5, old_pct=0.5):
 
 
 
-# get 1000 connected nodes
-def get_sample_nodes(G, random_node):
+# get sample: connected nodes
+def get_sample_nodes(G, random_node, sample_size):
     res_list = []  # result list of connected nodes
     work_list = []
     visited_list = []
     res_list.append(random_node)
     work_list.append(random_node)
 
-    while (len(res_list) < 1000) and (len(work_list) > 0):
+    while (len(res_list) < sample_size) and (len(work_list) > 0):
 
         for n in work_list:
             for nbr in nx.all_neighbors(G, n):
@@ -157,4 +158,110 @@ def get_sample_nodes(G, random_node):
 
         work_list = [n for n in res_list if n not in visited_list]
 
-    return res_list[: 1000]
+    return res_list[: sample_size]
+
+
+#for networks with timestamps
+def link_direction_prediction_app(G):
+
+    e_all = list(G.edges(data=True))
+    e_all = sorted(e_all, key=lambda t: t[2].get('sec'))    #for networks with timestamps
+    k = round(len(e_all) * 0.5)
+
+    e_old = e_all[: k]
+    e_new = e_all[k:]
+    G_old = nx.DiGraph()
+    G_old.add_edges_from(e_old)
+
+    e_possible_to_predict = get_e_possible_to_predict(e_new, G_old)
+    random.shuffle(e_possible_to_predict)
+    e_target = e_possible_to_predict[: 500]  # ground truth: random pick 500 true links from e_possible_to_predict
+    target_num_links = len(e_target)
+
+    G_new = nx.DiGraph()
+    G_new.add_edges_from(e_target)  # ground truth: random pick 500 true links from e_possible_to_predict
+    G_new_undirected = G_new.to_undirected()
+
+    dict_e_with_di_score = get_direction_score(G_new_undirected, G_old)
+
+    res_G_directed = nx.DiGraph()  # what to return
+
+    for k, v in dict_e_with_di_score.items():
+        if v == 0:
+            res_G_directed.add_edge(k[0], k[1])
+            res_G_directed.add_edge(k[1], k[0])
+        elif v > 0:
+            res_G_directed.add_edge(k[0], k[1])
+        else:
+            res_G_directed.add_edge(k[1], k[0])
+
+    current_num_link = res_G_directed.number_of_edges()
+    # for test:
+    if current_num_link > target_num_links:
+        print(current_num_link)
+
+    dict_abs_score = dict()  # used to sort, only contain edges with non_zero score
+    for key in dict_e_with_di_score:
+        if dict_e_with_di_score[key] != 0:
+            dict_abs_score[key] = abs(dict_e_with_di_score[key])
+
+    ordered_list_of_abs_dict = [(k, v) for k, v in
+                                sorted(dict_abs_score.items(), key=lambda item: item[1])]  # in ascending order
+
+    length = len(ordered_list_of_abs_dict)
+    index = 0  # initialised at the begining of list
+
+    while current_num_link < target_num_links and index < length:
+        e_key = ordered_list_of_abs_dict[index][0]
+        e_value = dict_e_with_di_score[e_key]
+
+        if e_value > 0:
+            res_G_directed.add_edge(e_key[1], e_key[0])
+        else:
+            res_G_directed.add_edge(e_key[0], e_key[1])
+
+        current_num_link = res_G_directed.number_of_edges()
+        index += 1
+
+    numerator = 0
+    for e in res_G_directed.edges():
+
+        if res_G_directed.has_edge(e[0], e[1]) and G_new.has_edge(e[0], e[1]):
+            numerator += 1
+    return numerator / target_num_links
+
+
+
+
+
+
+def get_e_possible_to_predict(e_new, G_old):
+    e_possible_to_predict = []
+    old_node_list = list(G_old.nodes())
+
+    for e in e_new:
+        if (e[0] in old_node_list) and (e[1] in old_node_list):
+            e_possible_to_predict.append(e)
+    return e_possible_to_predict
+
+
+# get direction score for interested edges
+def get_direction_score(G_new_sample, G_old):
+    dict_e_with_di_score = dict()
+
+    dict_ce = nx.closure(G_old, G_new_sample.nodes())   #only for nodes exist in G_new
+
+    for e in G_new_sample.edges():
+        left_src = dict_ce[e[0]][1]
+        left_tgt = dict_ce[e[0]][2]
+        right_src = dict_ce[e[1]][1]
+        right_tgt = dict_ce[e[1]][2]
+        L2R = left_src + right_tgt
+        R2L = right_src + left_tgt
+
+        dict_e_with_di_score[e] = L2R - R2L
+
+    return dict_e_with_di_score
+
+
+
