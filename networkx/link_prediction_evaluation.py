@@ -173,13 +173,18 @@ def link_direction_prediction_app(G):
     G_old = nx.DiGraph()
     G_old.add_edges_from(e_old)
 
-    e_possible_to_predict = get_e_possible_to_predict(e_new, G_old)
-    random.shuffle(e_possible_to_predict)
-    e_target = e_possible_to_predict[: 500]  # ground truth: random pick 500 true links from e_possible_to_predict
+    # e_possible_to_predict = get_e_possible_to_predict(e_new, G_old)   # slow here
+    # random.shuffle(e_possible_to_predict)
+    # e_target = e_possible_to_predict[: 500]  # ground truth: random pick 500 true links from e_possible_to_predict
+
+    random.shuffle(e_new)
+    e_new_sample = e_new[: 800]
+    e_target = get_e_possible_to_predict(e_new_sample, G_old)  # ground truth
     target_num_links = len(e_target)
+    print("target number of links: %d" % target_num_links)
 
     G_new = nx.DiGraph()
-    G_new.add_edges_from(e_target)  # ground truth: random pick 500 true links from e_possible_to_predict
+    G_new.add_edges_from(e_target)  # ground truth
     G_new_undirected = G_new.to_undirected()
 
     dict_e_with_di_score = get_direction_score(G_new_undirected, G_old)
@@ -196,6 +201,8 @@ def link_direction_prediction_app(G):
             res_G_directed.add_edge(k[1], k[0])
 
     current_num_link = res_G_directed.number_of_edges()
+
+
     # for test:
     if current_num_link > target_num_links:
         print(current_num_link)
