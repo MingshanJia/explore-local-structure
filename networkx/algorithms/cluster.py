@@ -342,8 +342,8 @@ def _directed_weighted_triangles_and_otc(G, nodes=None, weight='weight'):
             directed_triangles += sum((wt(j, i) * wt(i, k) * wt(j, k))
                                       for k in isuccs & jsuccs)
 
-            directed_center_opentriads += sum(wt(j, i) * wt(k, i) for k in (ipreds - {j}))
-            directed_center_opentriads += sum(wt(j, i) * wt(i, k) for k in (isuccs - {j}))
+            directed_center_opentriads += sum(abs(wt(j, i) * wt(k, i)) for k in (ipreds - {j}))
+            directed_center_opentriads += sum(abs(wt(j, i) * wt(i, k)) for k in (isuccs - {j}))
 
 
         for j in isuccs:
@@ -358,8 +358,8 @@ def _directed_weighted_triangles_and_otc(G, nodes=None, weight='weight'):
             directed_triangles += sum((wt(i, j) * wt(i, k) * wt(j, k))
                                       for k in isuccs & jsuccs)
 
-            directed_center_opentriads += sum(wt(i, j) * wt(k, i) for k in (ipreds - {j}))
-            directed_center_opentriads += sum(wt(i, j) * wt(i, k) for k in (isuccs - {j}))
+            directed_center_opentriads += sum(abs(wt(i, j) * wt(k, i)) for k in (ipreds - {j}))
+            directed_center_opentriads += sum(abs(wt(i, j) * wt(i, k)) for k in (isuccs - {j}))
 
         yield (i, directed_triangles, directed_center_opentriads)
 

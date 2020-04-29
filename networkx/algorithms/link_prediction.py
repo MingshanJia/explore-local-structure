@@ -41,6 +41,8 @@ def perform_link_prediction(G_old, G_new, method, dict_ce):
         pred_links = closure_similarity_index(G_old, dict_ce)[0 : k]
     if method == 'clo2':
         pred_links = closure_similarity_index_two(G_old, dict_ce)[0 : k]
+    if method == 'dgr':
+        pred_links = degree_similarity_index(G_old)[0 : k]
     # clo3 is only for directed network
     # if method == 'clo3':
     #     pred_links = closure_similarity_index_three(G_old, dict_ce)[0 : k]
@@ -105,6 +107,15 @@ def closure_similarity_index_two(G, dict_ce, ebunch=None):
 # dict_Ce: {v: [clo, src_clo, tgt_clo]}
     def predict(G, u, v):
         return len(list(nx.directed_common_neighbors_two(G, u, v))) * (dict_ce[u][1] + dict_ce[v][2])
+
+    return _apply_prediction(G, predict, ebunch)
+
+
+# using out_degree(s), in_degree(t) and common nbrs info
+def degree_similarity_index(G, ebunch=None):
+# dict_Ce: {v: [clo, src_clo, tgt_clo]}
+    def predict(G, u, v):
+        return len(list(nx.directed_common_neighbors_two(G, u, v))) * (G.out_degree[u] + G.in_degree[v])
 
     return _apply_prediction(G, predict, ebunch)
 
