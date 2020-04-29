@@ -8,7 +8,7 @@ import networkx as nx
 from networkx.utils import not_implemented_for
 
 __all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity',
-           'square_clustering', 'generalized_degree', 'average_closure', 'closure']
+           'square_clustering', 'generalized_degree', 'average_closure', 'closure', 'closure_patterns']
 
 
 @not_implemented_for('directed')
@@ -250,6 +250,83 @@ def _directed_triangles_and_opentriads_iter(G, nodes=None):
             open_triads += 2 * (dj - 1)
 
         yield (i, directed_triangles, ts, tt, open_triads)
+
+
+# for four patterns
+def _directed_four_patterns_iter(G, nodes=None):
+    """ Return an iterator of four patterns
+    """
+    nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
+
+    for i, preds, succs in nodes_nbrs:
+        ipreds = set(preds) - {i}
+        isuccs = set(succs) - {i}
+
+        t_head = 0
+        t_mid = 0
+        t_end = 0
+        t_cyc = 0
+        for j in isuccs:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+
+            t_head += sum(1 for k in
+                      chain((isuccs & jpreds),
+                            (isuccs & jsuccs)))
+            t_mid += sum(1 for k in ipreds & jpreds)
+            t_cyc += sum(1 for k in ipreds & jsuccs)
+
+
+
+        for j in ipreds:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+
+            t_end += sum(1 for k in
+                      chain((ipreds & jpreds),
+                            (ipreds & jsuccs)))
+            t_mid += sum(1 for k in isuccs & jsuccs)
+            t_cyc += sum(1 for k in isuccs & jpreds)
+
+
+        ot_head = 0
+        ot_mid = 0
+        ot_end = 0
+        ot_cyc = 0
+        for j in ipreds & isuccs:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+            ot_head += dj - 2
+            ot_end += dj - 2
+            ot_mid += dj - 2
+            ot_cyc += dj - 2
+
+
+        for j in (isuccs - (ipreds & isuccs)):
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+            dj_in = len(jpreds)
+            dj_out = len(jsuccs)
+
+            ot_head += dj - 1
+            ot_mid += dj_in - 1
+            ot_cyc += dj_out
+
+        for j in (ipreds - (ipreds & isuccs)):
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+            dj_out = len(jsuccs)
+            dj_in = len(jpreds)
+
+            ot_end += dj - 1
+            ot_mid += dj_out - 1
+            ot_cyc += dj_in
+
+
+        yield (i, t_head, t_mid, t_end, t_cyc, ot_head, ot_mid, ot_end, ot_cyc)
 
 
 # @not_implemented_for('multigraph')
@@ -687,6 +764,24 @@ def closure(G, nodes=None, weight=None):
             td_iter = _triangles_and_opentriads_iter(G, nodes)
             closurec = {v: [0] if t == 0 else [t / ot] for
                         v, t, ot in td_iter}
+    if nodes in G:
+        # Return the value of the sole entry in the dictionary.
+        return closurec[nodes]
+    return closurec
+
+
+# KEYFUNC
+def closure_patterns(G, nodes=None, weight=None):
+
+    if G.is_directed():
+        if weight is not None:
+            pass
+        else:
+            pattern_iter = _directed_four_patterns_iter(G, nodes)
+
+            closurec = {v: [0, 0, 0, 0] if (th == 0 and tm == 0 and te == 0 and tc == 0) else [th / oth, tm / otm, te / ote, tc / otc]
+                        for v, th, tm, te, tc, oth, otm, ote, otc in pattern_iter}
+
     if nodes in G:
         # Return the value of the sole entry in the dictionary.
         return closurec[nodes]
