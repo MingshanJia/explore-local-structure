@@ -8,7 +8,7 @@ import networkx as nx
 from networkx.utils import not_implemented_for
 
 __all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity',
-           'square_clustering', 'generalized_degree', 'average_closure', 'closure', 'closure_patterns']
+           'square_clustering', 'generalized_degree', 'average_closure', 'closure', 'closure_patterns', 'src_closure', 'tgt_closure']
 
 
 @not_implemented_for('directed')
@@ -209,7 +209,7 @@ def _directed_triangles_and_degree_iter(G, nodes=None):
 # for closure-co
 def _directed_triangles_and_opentriads_iter(G, nodes=None):
     """ Return an iterator of
-    (node, total_degree, reciprocal_degree, directed_triangles, open_triads).
+    (node, directed_triangles, open_triads).
 
     Used for directed clustering and closure.
 
@@ -249,7 +249,72 @@ def _directed_triangles_and_opentriads_iter(G, nodes=None):
             dj = len(jpreds) + len(jsuccs)
             open_triads += 2 * (dj - 1)
 
-        yield (i, directed_triangles, ts, tt, open_triads)
+        yield (i, directed_triangles, open_triads)
+
+
+#for src-clo
+def _directed_src_triangles_and_opentriads_iter(G, nodes=None):
+
+    nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
+
+    for i, preds, succs in nodes_nbrs:
+        ipreds = set(preds) - {i}
+        isuccs = set(succs) - {i}
+
+        ts = 0
+        for j in chain(ipreds, isuccs):
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+
+            ts += sum(1 for k in
+                      chain((isuccs & jpreds),
+                            (isuccs & jsuccs)))
+
+        open_triads = 0
+        for j in ipreds & isuccs:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+            open_triads += 4 * (dj - 2)
+        for j in ((ipreds | isuccs) - (ipreds & isuccs)):
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+            open_triads += 2 * (dj - 1)
+
+        yield (i, ts, open_triads)
+
+# for tgt-clo
+def _directed_tgt_triangles_and_opentriads_iter(G, nodes=None):
+
+    nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
+
+    for i, preds, succs in nodes_nbrs:
+        ipreds = set(preds) - {i}
+        isuccs = set(succs) - {i}
+
+        tt = 0
+        for j in chain(ipreds, isuccs):
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+
+            tt += sum(1 for k in
+                      chain((ipreds & jpreds),
+                            (ipreds & jsuccs)))
+
+        open_triads = 0
+        for j in ipreds & isuccs:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+            open_triads += 4 * (dj - 2)
+        for j in ((ipreds | isuccs) - (ipreds & isuccs)):
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+            open_triads += 2 * (dj - 1)
+
+        yield (i, tt, open_triads)
 
 
 # for four patterns
@@ -513,58 +578,7 @@ def _directed_weighted_triangles_and_opentriads_iter(G, nodes=None, weight='weig
 
 
 def average_clustering(G, nodes=None, weight=None, count_zeros=True):
-    r"""Compute the average clustering coefficient for the graph G.
 
-    The clustering coefficient for the graph is the average,
-
-    .. math::
-
-       C = \frac{1}{n}\sum_{v \in G} c_v,
-
-    where :math:`n` is the number of nodes in `G`.
-
-    Parameters
-    ----------
-    G : graph
-
-    nodes : container of nodes, optional (default=all nodes in G)
-       Compute average clustering for nodes in this container.
-
-    weight : string or None, optional (default=None)
-       The edge attribute that holds the numerical value used as a weight.
-       If None, then each edge has weight 1.
-
-    count_zeros : bool
-       If False include only the nodes with nonzero clustering in the average.
-
-    Returns
-    -------
-    avg : float
-       Average clustering
-
-    Examples
-    --------
-    >>> G=nx.complete_graph(5)
-    >>> print(nx.average_clustering(G))
-    1.0
-
-    Notes
-    -----
-    This is a space saving routine; it might be faster
-    to use the clustering function to get a list and then take the average.
-
-    Self loops are ignored.
-
-    References
-    ----------
-    .. [1] Generalizations of the clustering coefficient to weighted
-       complex networks by J. Saramäki, M. Kivelä, J.-P. Onnela,
-       K. Kaski, and J. Kertész, Physical Review E, 75 027105 (2007).
-       http://jponnela.com/web_documents/a9.pdf
-    .. [2] Marcus Kaiser,  Mean clustering coefficients: the role of isolated
-       nodes and leafs on clustering measures for small-world networks.
-       https://arxiv.org/abs/0802.2512
-    """
     c = clustering(G, nodes, weight=weight).values()
     if not count_zeros:
         c = [v for v in c if v > 0]
@@ -596,15 +610,10 @@ def average_closure(G, nodes=None, weight=None, count_zeros=True):
     Examples
     --------
     >>> G=nx.complete_graph(5)
-    >>> print(nx.average_clustering(G))
+    >>> print(nx.average_closure(G))
     1.0
     """
-    ce_all_dict = closure(G, nodes, weight=weight)
-    ce_dict = dict()
-    for k, v in ce_all_dict.items():
-        ce_dict[k] = v[0]
-
-    ce = ce_dict.values()
+    ce = closure(G, nodes, weight=weight).values()
 
     if not count_zeros:
         ce = [v for v in ce if v > 0]
@@ -612,86 +621,7 @@ def average_closure(G, nodes=None, weight=None, count_zeros=True):
 
 
 def clustering(G, nodes=None, weight=None):
-    r"""Compute the clustering coefficient for nodes.
 
-    For unweighted graphs, the clustering of a node :math:`u`
-    is the fraction of possible triangles through that node that exist,
-
-    .. math::
-
-      c_u = \frac{2 T(u)}{deg(u)(deg(u)-1)},
-
-    where :math:`T(u)` is the number of triangles through node :math:`u` and
-    :math:`deg(u)` is the degree of :math:`u`.
-
-    For weighted graphs, there are several ways to define clustering [1]_.
-    the one used here is defined
-    as the geometric average of the subgraph edge weights [2]_,
-
-    .. math::
-
-       c_u = \frac{1}{deg(u)(deg(u)-1))}
-             \sum_{vw} (\hat{w}_{uv} \hat{w}_{uw} \hat{w}_{vw})^{1/3}.
-
-    The edge weights :math:`\hat{w}_{uv}` are normalized by the maximum weight
-    in the network :math:`\hat{w}_{uv} = w_{uv}/\max(w)`.
-
-    The value of :math:`c_u` is assigned to 0 if :math:`deg(u) < 2`.
-
-    For directed graphs, the clustering is similarly defined as the fraction
-    of all possible directed triangles or geometric average of the subgraph
-    edge weights for unweighted and weighted directed graph respectively [3]_.
-
-    .. math::
-
-       c_u = \frac{1}{deg^{tot}(u)(deg^{tot}(u)-1) - 2deg^{\leftrightarrow}(u)}
-             T(u),
-
-    where :math:`T(u)` is the number of directed triangles through node
-    :math:`u`, :math:`deg^{tot}(u)` is the sum of in degree and out degree of
-    :math:`u` and :math:`deg^{\leftrightarrow}(u)` is the reciprocal degree of
-    :math:`u`.
-
-    Parameters
-    ----------
-    G : graph
-
-    nodes : container of nodes, optional (default=all nodes in G)
-       Compute clustering for nodes in this container.
-
-    weight : string or None, optional (default=None)
-       The edge attribute that holds the numerical value used as a weight.
-       If None, then each edge has weight 1.
-
-    Returns
-    -------
-    out : float, or dictionary
-       Clustering coefficient at specified nodes
-
-    Examples
-    --------
-    >>> G=nx.complete_graph(5)
-    >>> print(nx.clustering(G,0))
-    1.0
-    >>> print(nx.clustering(G))
-    {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0}
-
-    Notes
-    -----
-    Self loops are ignored.
-
-    References
-    ----------
-    .. [1] Generalizations of the clustering coefficient to weighted
-       complex networks by J. Saramäki, M. Kivelä, J.-P. Onnela,
-       K. Kaski, and J. Kertész, Physical Review E, 75 027105 (2007).
-       http://jponnela.com/web_documents/a9.pdf
-    .. [2] Intensity and coherence of motifs in weighted complex
-       networks by J. P. Onnela, J. Saramäki, J. Kertész, and K. Kaski,
-       Physical Review E, 71(6), 065103 (2005).
-    .. [3] Clustering in complex directed networks by G. Fagiolo,
-       Physical Review E, 76(2), 026107 (2007).
-    """
     if G.is_directed():
         # change to another way
         if weight is not None:
@@ -721,35 +651,17 @@ def clustering(G, nodes=None, weight=None):
 
 # KEYFUNC: for closure-co
 def closure(G, nodes=None, weight=None):
-    r"""Compute the closure coefficient for nodes.
 
-    Parameters
-    ----------
-    G : graph
-
-    nodes : container of nodes, optional (default=all nodes in G)
-       Compute clustering for nodes in this container.
-
-    weight : string or None, optional (default=None)
-       The edge attribute that holds the numerical value used as a weight.
-       If None, then each edge has weight 1.
-
-    Returns
-    -------
-    {v: [clo, src-clo, tgt-clo]}  for directed, unweighted network, it is three tuple, used in directed link prediction
-
-    Notes: Self loops are ignored.
-    """
     if G.is_directed():
         if weight is not None:
             td_iter = _directed_weighted_triangles_and_opentriads_iter(G, nodes, weight)
-            closurec = {v: [0] if t == 0 else [t / ot]
+            closurec = {v: 0 if t == 0 else t / ot
                         for v, t, ot in td_iter}
         else:
             td_iter = _directed_triangles_and_opentriads_iter(G, nodes)
 
-            closurec = {v: [0, 0, 0] if (ts == 0 and tt == 0) else [t / ot, ts / ot, tt / ot]
-                        for v, t, ts, tt, ot in td_iter}
+            closurec = {v: 0 if t == 0 else t / ot
+                        for v, t, ot in td_iter}
 
             # closurec = {v: 0 if t == 0 else t / ot
             #             for v, dt, db, t, ot in td_iter}
@@ -762,8 +674,43 @@ def closure(G, nodes=None, weight=None):
             #             v, d, t in td_iter}
         else:
             td_iter = _triangles_and_opentriads_iter(G, nodes)
-            closurec = {v: [0] if t == 0 else [t / ot] for
+            closurec = {v: 0 if t == 0 else t / ot for
                         v, t, ot in td_iter}
+    if nodes in G:
+        # Return the value of the sole entry in the dictionary.
+        return closurec[nodes]
+    return closurec
+
+# KEYFUNC: for source closure-co
+def src_closure(G, nodes=None, weight=None):
+
+    if G.is_directed():
+        if weight is not None:
+            pass
+        else:
+            td_iter = _directed_src_triangles_and_opentriads_iter(G, nodes)
+
+            closurec = {v: 0 if ts == 0 else ts / ot
+                        for v, ts, ot in td_iter}
+
+    if nodes in G:
+        # Return the value of the sole entry in the dictionary.
+        return closurec[nodes]
+    return closurec
+
+
+# KEYFUNC: for source closure-co
+def tgt_closure(G, nodes=None, weight=None):
+
+    if G.is_directed():
+        if weight is not None:
+            pass
+        else:
+            td_iter = _directed_tgt_triangles_and_opentriads_iter(G, nodes)
+
+            closurec = {v: 0 if tt == 0 else tt / ot
+                        for v, tt, ot in td_iter}
+
     if nodes in G:
         # Return the value of the sole entry in the dictionary.
         return closurec[nodes]

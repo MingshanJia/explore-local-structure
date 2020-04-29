@@ -25,7 +25,7 @@ __all__ = ['random_guess',
 
 
 # KeyFunc: return prediction precision
-def perform_link_prediction(G_old, G_new, method, dict_ce):
+def perform_link_prediction(G_old, G_new, method, dict_ce, dict_src, dict_tgt):
     G_new = G_new.subgraph(G_old.nodes())
     k = G_new.number_of_edges()    # number of links chosen from prediction, also number of links in ground truth
 
@@ -38,9 +38,9 @@ def perform_link_prediction(G_old, G_new, method, dict_ce):
     if method == 'ra':
         pred_links = resource_allocation_index(G_old)[0 : k]
     if method == 'clo1':
-        pred_links = closure_similarity_index(G_old, dict_ce)[0 : k]
+        pred_links = closure_similarity_index(G_old, dict_ce, dict_src, dict_tgt)[0 : k]
     if method == 'clo2':
-        pred_links = closure_similarity_index_two(G_old, dict_ce)[0 : k]
+        pred_links = closure_similarity_index_two(G_old, dict_src, dict_tgt)[0 : k]
     if method == 'dgr':
         pred_links = degree_similarity_index(G_old)[0 : k]
     # clo3 is only for directed network
@@ -91,22 +91,22 @@ def common_neighbor_index(G, ebunch=None):
 
 
 # KeyFunc: newly introduced
-def closure_similarity_index(G, dict_ce, ebunch=None):
-# dict_Ce: {v: [clo, src_clo, tgt_clo]}
+def closure_similarity_index(G, dict_ce, dict_src, dict_tgt, ebunch=None):
+
     def predict(G, u, v):
         if G.is_directed():
-            return len(list(nx.directed_common_neighbors(G, u, v))) * (dict_ce[u][1] + dict_ce[v][2])
+            return len(list(nx.directed_common_neighbors(G, u, v))) * (dict_src[u] + dict_tgt[v])
         else:
-            return len(list(nx.common_neighbors(G, u, v))) * (dict_ce[u][0] + dict_ce[v][0])
+            return len(list(nx.common_neighbors(G, u, v))) * (dict_ce[u] + dict_ce[v])
 
     return _apply_prediction(G, predict, ebunch)
 
 
 # KeyFunc: only for directed network
-def closure_similarity_index_two(G, dict_ce, ebunch=None):
+def closure_similarity_index_two(G, dict_src, dict_tgt, ebunch=None):
 # dict_Ce: {v: [clo, src_clo, tgt_clo]}
     def predict(G, u, v):
-        return len(list(nx.directed_common_neighbors_two(G, u, v))) * (dict_ce[u][1] + dict_ce[v][2])
+        return len(list(nx.directed_common_neighbors_two(G, u, v))) * (dict_src[u] + dict_tgt[v])
 
     return _apply_prediction(G, predict, ebunch)
 
