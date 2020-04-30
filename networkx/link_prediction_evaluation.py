@@ -1,6 +1,5 @@
 import random
 import networkx as nx
-import math
 
 __all__ = ['link_pred_app',
            'link_pred_sample_app']

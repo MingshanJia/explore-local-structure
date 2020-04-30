@@ -8,7 +8,8 @@ import networkx as nx
 from networkx.utils import not_implemented_for
 
 __all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity',
-           'square_clustering', 'generalized_degree', 'average_closure', 'closure', 'closure_patterns', 'src_closure', 'tgt_closure']
+           'square_clustering', 'generalized_degree', 'average_closure', 'closure',
+           'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure']
 
 
 @not_implemented_for('directed')
@@ -317,10 +318,8 @@ def _directed_tgt_triangles_and_opentriads_iter(G, nodes=None):
         yield (i, tt, open_triads)
 
 
-# for four patterns
-def _directed_four_patterns_iter(G, nodes=None):
-    """ Return an iterator of four patterns
-    """
+# for head-of-path pattern
+def _head_pattern_iter(G, nodes=None):
     nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
 
     for i, preds, succs in nodes_nbrs:
@@ -328,9 +327,6 @@ def _directed_four_patterns_iter(G, nodes=None):
         isuccs = set(succs) - {i}
 
         t_head = 0
-        t_mid = 0
-        t_end = 0
-        t_cyc = 0
         for j in isuccs:
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
@@ -338,60 +334,140 @@ def _directed_four_patterns_iter(G, nodes=None):
             t_head += sum(1 for k in
                       chain((isuccs & jpreds),
                             (isuccs & jsuccs)))
-            t_mid += sum(1 for k in ipreds & jpreds)
-            t_cyc += sum(1 for k in ipreds & jsuccs)
-
-
-
-        for j in ipreds:
-            jpreds = set(G._pred[j]) - {j}
-            jsuccs = set(G._succ[j]) - {j}
-
-            t_end += sum(1 for k in
-                      chain((ipreds & jpreds),
-                            (ipreds & jsuccs)))
-            t_mid += sum(1 for k in isuccs & jsuccs)
-            t_cyc += sum(1 for k in isuccs & jpreds)
-
 
         ot_head = 0
-        ot_mid = 0
-        ot_end = 0
-        ot_cyc = 0
         for j in ipreds & isuccs:
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
             dj = len(jpreds) + len(jsuccs)
             ot_head += dj - 2
-            ot_end += dj - 2
-            ot_mid += dj - 2
-            ot_cyc += dj - 2
-
 
         for j in (isuccs - (ipreds & isuccs)):
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
             dj = len(jpreds) + len(jsuccs)
-            dj_in = len(jpreds)
-            dj_out = len(jsuccs)
 
             ot_head += dj - 1
+        yield (i, t_head, ot_head)
+
+
+# for mid-of-path pattern
+def _mid_pattern_iter(G, nodes=None):
+    nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
+
+    for i, preds, succs in nodes_nbrs:
+        ipreds = set(preds) - {i}
+        isuccs = set(succs) - {i}
+
+        t_mid = 0
+        for j in isuccs:
+            jpreds = set(G._pred[j]) - {j}
+
+            t_mid += sum(1 for k in ipreds & jpreds)
+        for j in ipreds:
+            jsuccs = set(G._succ[j]) - {j}
+
+            t_mid += sum(1 for k in isuccs & jsuccs)
+
+        ot_mid = 0
+        for j in ipreds & isuccs:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+
+            ot_mid += dj - 2
+
+        for j in (isuccs - (ipreds & isuccs)):
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj_in = len(jpreds)
+
             ot_mid += dj_in - 1
-            ot_cyc += dj_out
+
+        for j in (ipreds - (ipreds & isuccs)):
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj_out = len(jsuccs)
+
+            ot_mid += dj_out - 1
+
+        yield (i, t_mid, ot_mid)
+
+
+# for end-of-path pattern
+def _end_pattern_iter(G, nodes=None):
+    nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
+
+    for i, preds, succs in nodes_nbrs:
+        ipreds = set(preds) - {i}
+        isuccs = set(succs) - {i}
+
+        t_end = 0
+        for j in ipreds:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+
+            t_end += sum(1 for k in
+                         chain((ipreds & jpreds),
+                               (ipreds & jsuccs)))
+
+        ot_end = 0
+        for j in ipreds & isuccs:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+            ot_end += dj - 2
 
         for j in (ipreds - (ipreds & isuccs)):
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
             dj = len(jpreds) + len(jsuccs)
-            dj_out = len(jsuccs)
-            dj_in = len(jpreds)
 
             ot_end += dj - 1
-            ot_mid += dj_out - 1
+
+        yield (i, t_end, ot_end)
+
+
+#for cyclic pattern
+def _cyc_pattern_iter(G, nodes=None):
+    nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
+
+    for i, preds, succs in nodes_nbrs:
+        ipreds = set(preds) - {i}
+        isuccs = set(succs) - {i}
+
+        t_cyc = 0
+        for j in isuccs:
+            jsuccs = set(G._succ[j]) - {j}
+
+            t_cyc += sum(1 for k in ipreds & jsuccs)
+
+        for j in ipreds:
+            jpreds = set(G._pred[j]) - {j}
+
+            t_cyc += sum(1 for k in isuccs & jpreds)
+
+        ot_cyc = 0
+        for j in ipreds & isuccs:
+            jpreds = set(G._pred[j]) - {j}
+            jsuccs = set(G._succ[j]) - {j}
+            dj = len(jpreds) + len(jsuccs)
+
+            ot_cyc += dj - 2
+
+        for j in (isuccs - (ipreds & isuccs)):
+            jsuccs = set(G._succ[j]) - {j}
+            dj_out = len(jsuccs)
+
+            ot_cyc += dj_out
+
+        for j in (ipreds - (ipreds & isuccs)):
+            jpreds = set(G._pred[j]) - {j}
+            dj_in = len(jpreds)
+
             ot_cyc += dj_in
 
-
-        yield (i, t_head, t_mid, t_end, t_cyc, ot_head, ot_mid, ot_end, ot_cyc)
+        yield (i, t_cyc, ot_cyc)
 
 
 # @not_implemented_for('multigraph')
@@ -731,6 +807,70 @@ def closure_patterns(G, nodes=None, weight=None):
 
     if nodes in G:
         # Return the value of the sole entry in the dictionary.
+        return closurec[nodes]
+    return closurec
+
+
+def head_closure(G, nodes=None, weight=None):
+
+    if G.is_directed():
+        if weight is not None:
+            pass
+        else:
+            pattern_iter = _head_pattern_iter(G, nodes)
+
+            closurec = {v: 0 if th == 0 else th / oth
+                        for v, th, oth in pattern_iter}
+
+    if nodes in G:
+        return closurec[nodes]
+    return closurec
+
+
+def mid_closure(G, nodes=None, weight=None):
+
+    if G.is_directed():
+        if weight is not None:
+            pass
+        else:
+            pattern_iter = _mid_pattern_iter(G, nodes)
+
+            closurec = {v: 0 if tm == 0 else tm / otm
+                        for v, tm, otm in pattern_iter}
+
+    if nodes in G:
+        return closurec[nodes]
+    return closurec
+
+
+def end_closure(G, nodes=None, weight=None):
+
+    if G.is_directed():
+        if weight is not None:
+            pass
+        else:
+            pattern_iter = _end_pattern_iter(G, nodes)
+
+            closurec = {v: 0 if te == 0 else te / ote
+                        for v, te, ote in pattern_iter}
+
+    if nodes in G:
+        return closurec[nodes]
+    return closurec
+
+
+def cyc_closure(G, nodes=None, weight=None):
+
+    if G.is_directed():
+        if weight is not None:
+            pass
+        else:
+            pattern_iter = _cyc_pattern_iter(G, nodes)
+
+            closurec = {v: 0 if tc == 0 else tc / otc
+                        for v, tc, otc in pattern_iter}
+
+    if nodes in G:
         return closurec[nodes]
     return closurec
 
