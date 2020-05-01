@@ -653,6 +653,7 @@ def _directed_weighted_triangles_and_opentriads_iter(G, nodes=None, weight='weig
         yield (i, directed_triangles, ot)
 
 
+
 def average_clustering(G, nodes=None, weight=None, count_zeros=True):
 
     c = clustering(G, nodes, weight=weight).values()
@@ -660,35 +661,9 @@ def average_clustering(G, nodes=None, weight=None, count_zeros=True):
         c = [v for v in c if v > 0]
     return sum(c) / len(c)
 
-# for closure-co
+# for average closure-co
 def average_closure(G, nodes=None, weight=None, count_zeros=True):
-    r"""Compute the average closure coefficient for the graph G.
 
-    Parameters
-    ----------
-    G : graph
-
-    nodes : container of nodes, optional (default=all nodes in G)
-       Compute average clustering for nodes in this container.
-
-    weight : string or None, optional (default=None)
-       The edge attribute that holds the numerical value used as a weight.
-       If None, then each edge has weight 1.
-
-    count_zeros : bool
-       If False include only the nodes with nonzero clustering in the average.
-
-    Returns
-    -------
-    avg : float
-       Average clustering
-
-    Examples
-    --------
-    >>> G=nx.complete_graph(5)
-    >>> print(nx.average_closure(G))
-    1.0
-    """
     ce = closure(G, nodes, weight=weight).values()
 
     if not count_zeros:
@@ -794,21 +769,21 @@ def tgt_closure(G, nodes=None, weight=None):
 
 
 # KEYFUNC
-def closure_patterns(G, nodes=None, weight=None):
-
-    if G.is_directed():
-        if weight is not None:
-            pass
-        else:
-            pattern_iter = _directed_four_patterns_iter(G, nodes)
-
-            closurec = {v: [0, 0, 0, 0] if (th == 0 and tm == 0 and te == 0 and tc == 0) else [th / oth, tm / otm, te / ote, tc / otc]
-                        for v, th, tm, te, tc, oth, otm, ote, otc in pattern_iter}
-
-    if nodes in G:
-        # Return the value of the sole entry in the dictionary.
-        return closurec[nodes]
-    return closurec
+# def closure_patterns(G, nodes=None, weight=None):
+#
+#     if G.is_directed():
+#         if weight is not None:
+#             pass
+#         else:
+#             pattern_iter = _directed_four_patterns_iter(G, nodes)
+#
+#             closurec = {v: [0, 0, 0, 0] if (th == 0 and tm == 0 and te == 0 and tc == 0) else [th / oth, tm / otm, te / ote, tc / otc]
+#                         for v, th, tm, te, tc, oth, otm, ote, otc in pattern_iter}
+#
+#     if nodes in G:
+#         # Return the value of the sole entry in the dictionary.
+#         return closurec[nodes]
+#     return closurec
 
 
 def head_closure(G, nodes=None, weight=None):
