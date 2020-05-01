@@ -963,26 +963,7 @@ def directed_common_neighbors(G, u, v):
 
 # @New added, count as undirected. For "closure_similarity_index_two"
 def directed_common_neighbors_two(G, u, v):
-    """Returns the common neighbors of two nodes in a graph, from the meaning of u --> v.
 
-    Parameters
-    ----------
-    G : graph
-        A NetworkX undirected graph.
-
-    u, v : nodes
-        Nodes in the graph.
-
-    Returns
-    -------
-    cnbors : iterator
-        Iterator of common neighbors of u and v in the graph.
-
-    Raises
-    ------
-    NetworkXError
-        If u or v is not a node in the graph.
-    """
     if u not in G:
         raise nx.NetworkXError('u is not in the graph.')
     if v not in G:

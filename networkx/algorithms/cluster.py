@@ -78,13 +78,7 @@ def _triangles_and_degree_iter(G, nodes=None):
 # for clo-co
 @not_implemented_for('multigraph')
 def _triangles_and_opentriads_iter(G, nodes=None):
-    """ Return an iterator of (node, degree, triangles, opentriads, generalized degree).
 
-    This double counts triangles so you may want to divide by 2.
-    See degree(), triangles() and generalized_degree() for definitions
-    and details.
-
-    """
     if nodes is None:
         nodes_nbrs = G.adj.items()
     else:
@@ -250,7 +244,7 @@ def _directed_triangles_and_opentriads_iter(G, nodes=None):
             dj = len(jpreds) + len(jsuccs)
             open_triads += 2 * (dj - 1)
 
-        yield (i, directed_triangles, open_triads)
+        yield (i, ts, tt,  open_triads)
 
 
 #for src-clo
@@ -664,11 +658,14 @@ def average_clustering(G, nodes=None, weight=None, count_zeros=True):
 # for average closure-co
 def average_closure(G, nodes=None, weight=None, count_zeros=True):
 
-    ce = closure(G, nodes, weight=weight).values()
+    ce = closure(G, nodes, weight=weight)
+    list_ce = []
+    for k, v in ce.items():
+        list_ce.append(v[0])
 
     if not count_zeros:
-        ce = [v for v in ce if v > 0]
-    return sum(ce) / len(ce)
+        list_ce = [v for v in list_ce if v > 0]
+    return sum(list_ce) / len(list_ce)
 
 
 def clustering(G, nodes=None, weight=None):
@@ -706,16 +703,14 @@ def closure(G, nodes=None, weight=None):
     if G.is_directed():
         if weight is not None:
             td_iter = _directed_weighted_triangles_and_opentriads_iter(G, nodes, weight)
-            closurec = {v: 0 if t == 0 else t / ot
+            closurec = {v: [0] if t == 0 else [t / ot]
                         for v, t, ot in td_iter}
         else:
             td_iter = _directed_triangles_and_opentriads_iter(G, nodes)
 
-            closurec = {v: 0 if t == 0 else t / ot
-                        for v, t, ot in td_iter}
+            closurec = {v: [0, 0, 0] if (ts == 0 and tt == 0) else [(ts + tt) / ot, ts / ot, tt / ot]
+                        for v, ts, tt, ot in td_iter}
 
-            # closurec = {v: 0 if t == 0 else t / ot
-            #             for v, dt, db, t, ot in td_iter}
     # undirected:
     else:
         if weight is not None:
@@ -725,7 +720,7 @@ def closure(G, nodes=None, weight=None):
             #             v, d, t in td_iter}
         else:
             td_iter = _triangles_and_opentriads_iter(G, nodes)
-            closurec = {v: 0 if t == 0 else t / ot for
+            closurec = {v: [0] if t == 0 else [t / ot] for
                         v, t, ot in td_iter}
     if nodes in G:
         # Return the value of the sole entry in the dictionary.

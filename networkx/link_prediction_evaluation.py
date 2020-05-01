@@ -18,7 +18,7 @@ def link_pred_app(G, repeat=1, old_pct=0.5):
     ra = 0
     clo1 = 0
     clo2 = 0
-    dgr = 0
+    #dgr = 0
     e_all = list(G.edges(data=True))
     k = round(len(e_all) * old_pct)
 
@@ -39,23 +39,21 @@ def link_pred_app(G, repeat=1, old_pct=0.5):
         G_new.add_edges_from(e_new)
 
         dict_ce = nx.closure(G_old)
-        dict_src = nx.src_closure(G_old)
-        dict_tgt = nx.tgt_closure(G_old)
 
         rg += nx.random_guess(G_old, G_new)
         print('rg: %.3f' % (rg))
-        cn += nx.perform_link_prediction(G_old, G_new, 'cn', dict_ce, dict_src, dict_tgt)
+        cn += nx.perform_link_prediction(G_old, G_new, 'cn', dict_ce)
         print('cn: %.3f' % (cn))
-        aa += nx.perform_link_prediction(G_old, G_new, 'aa', dict_ce, dict_src, dict_tgt)
+        aa += nx.perform_link_prediction(G_old, G_new, 'aa', dict_ce)
         print('aa: %.3f' % (aa))
-        ra += nx.perform_link_prediction(G_old, G_new, 'ra', dict_ce, dict_src, dict_tgt)
+        ra += nx.perform_link_prediction(G_old, G_new, 'ra', dict_ce)
         print('ra: %.3f' % (ra))
-        clo1 += nx.perform_link_prediction(G_old, G_new, 'clo1', dict_ce, dict_src, dict_tgt)
+        clo1 += nx.perform_link_prediction(G_old, G_new, 'clo1', dict_ce)
         print('clo1: %.3f' % (clo1))
-        clo2 += nx.perform_link_prediction(G_old, G_new, 'clo2', dict_ce, dict_src, dict_tgt)
+        clo2 += nx.perform_link_prediction(G_old, G_new, 'clo2', dict_ce)
         print('clo2: %.3f' % (clo2))
-        dgr += nx.perform_link_prediction(G_old, G_new, 'dgr', dict_ce, dict_src, dict_tgt)
-        print('dgr: %.3f' % (dgr))
+        #dgr += nx.perform_link_prediction(G_old, G_new, 'dgr', dict_ce)
+        #print('dgr: %.3f' % (dgr))
 
     rg /= (repeat)
     cn /= (repeat)
@@ -63,7 +61,7 @@ def link_pred_app(G, repeat=1, old_pct=0.5):
     ra /= (repeat)
     clo1 /= (repeat)
     clo2 /= (repeat)
-    dgr /= repeat
+    #dgr /= repeat
 
     res.append(rg)
     res.append(cn)
@@ -71,7 +69,7 @@ def link_pred_app(G, repeat=1, old_pct=0.5):
     res.append(ra)
     res.append(clo1)
     res.append(clo2)
-    res.append(dgr)
+    #res.append(dgr)
     return res
 
 # for very large networks, nodes > 10K. input graph G, repeat = 1 for dataset with timestamp, set repeat > 1 for dataset without timestamp
@@ -86,7 +84,7 @@ def link_pred_sample_app(G, repeat=1, sample_time=5, old_pct=0.5):
     ra = 0
     clo1 = 0
     clo2 = 0
-    dgr = 0
+    #dgr = 0
 
     e_all = list(G.edges(data=True))
     k = round(len(e_all) * old_pct)
@@ -117,23 +115,21 @@ def link_pred_sample_app(G, repeat=1, sample_time=5, old_pct=0.5):
             G_old_sampled = G_old.subgraph(sample_nodes)
 
             dict_ce = nx.closure(G_old_sampled)
-            dict_src = nx.src_closure(G_old)
-            dict_tgt = nx.tgt_closure(G_old)
 
             rg += nx.random_guess(G_old_sampled, G_new)
             print('rg: %.3f' % (rg))
-            cn += nx.perform_link_prediction(G_old_sampled, G_new, 'cn', dict_ce, dict_src, dict_tgt)
+            cn += nx.perform_link_prediction(G_old_sampled, G_new, 'cn', dict_ce)
             print('cn: %.3f' % (cn))
-            aa += nx.perform_link_prediction(G_old_sampled, G_new, 'aa', dict_ce, dict_src, dict_tgt)
+            aa += nx.perform_link_prediction(G_old_sampled, G_new, 'aa', dict_ce)
             print('aa: %.3f' % (aa))
-            ra += nx.perform_link_prediction(G_old_sampled, G_new, 'ra', dict_ce, dict_src, dict_tgt)
+            ra += nx.perform_link_prediction(G_old_sampled, G_new, 'ra', dict_ce)
             print('ra: %.3f' % (ra))
-            clo1 += nx.perform_link_prediction(G_old_sampled, G_new, 'clo1', dict_ce, dict_src, dict_tgt)
+            clo1 += nx.perform_link_prediction(G_old_sampled, G_new, 'clo1', dict_ce)
             print('clo1: %.3f' % (clo1))
-            clo2 += nx.perform_link_prediction(G_old_sampled, G_new, 'clo2', dict_ce, dict_src, dict_tgt)
+            clo2 += nx.perform_link_prediction(G_old_sampled, G_new, 'clo2', dict_ce)
             print('clo2: %.3f' % (clo2))
-            dgr += nx.perform_link_prediction(G_old, G_new, 'dgr', dict_ce, dict_src, dict_tgt)
-            print('dgr: %.3f' % (dgr))
+            #dgr += nx.perform_link_prediction(G_old, G_new, 'dgr', dict_ce)
+            #print('dgr: %.3f' % (dgr))
 
     rg /= (repeat * sample_time)
     cn /= (repeat * sample_time)
@@ -141,7 +137,7 @@ def link_pred_sample_app(G, repeat=1, sample_time=5, old_pct=0.5):
     ra /= (repeat * sample_time)
     clo1 /= (repeat * sample_time)
     clo2 /= (repeat * sample_time)
-    dgr /= (repeat * sample_time)
+    #dgr /= (repeat * sample_time)
 
     res.append(rg)
     res.append(cn)
@@ -149,7 +145,7 @@ def link_pred_sample_app(G, repeat=1, sample_time=5, old_pct=0.5):
     res.append(ra)
     res.append(clo1)
     res.append(clo2)
-    res.append(dgr)
+    #res.append(dgr)
     return res
 
 
