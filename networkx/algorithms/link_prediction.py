@@ -115,8 +115,9 @@ def closure_similarity_index_two(G, dict_ce, ebunch=None):
 # using out_degree(s), in_degree(t) and common nbrs info
 def degree_similarity_index(G, ebunch=None):
 # dict_Ce: {v: [clo, src_clo, tgt_clo]}
+    G_un = G.to_undirected()
     def predict(G, u, v):
-        return len(list(nx.directed_common_neighbors_two(G, u, v))) * (G.out_degree[u] + G.in_degree[v])
+        return len(list(nx.common_neighbors(G_un, u, v))) * (G.out_degree[u] + G.in_degree[v])
 
     return _apply_prediction(G, predict, ebunch)
 

@@ -19,7 +19,7 @@ __all__ = ['nodes', 'edges', 'degree', 'degree_histogram', 'neighbors',
            'create_empty_copy', 'set_node_attributes',
            'get_node_attributes', 'set_edge_attributes',
            'get_edge_attributes', 'all_neighbors', 'non_neighbors',
-           'non_edges', 'common_neighbors', 'directed_common_neighbors', 'directed_common_neighbors_two','is_weighted',
+           'non_edges', 'common_neighbors', 'directed_common_neighbors','is_weighted',
            'is_negatively_weighted', 'is_empty',
            'selfloop_edges', 'nodes_with_selfloops', 'number_of_selfloops',
            ]
@@ -959,17 +959,6 @@ def directed_common_neighbors(G, u, v):
     # Return a generator explicitly instead of yielding so that the above
     # checks are executed eagerly.
     return (w for w in G._succ[u] if w in G._pred[v] and w not in (u, v))
-
-
-# @New added, count as undirected. For "closure_similarity_index_two"
-def directed_common_neighbors_two(G, u, v):
-
-    if u not in G:
-        raise nx.NetworkXError('u is not in the graph.')
-    if v not in G:
-        raise nx.NetworkXError('v is not in the graph.')
-
-    return (w for w in nx.all_neighbors(G, u) if w in nx.all_neighbors(G, v) and w not in (u, v))
 
 
 def is_weighted(G, edge=None, weight='weight'):
