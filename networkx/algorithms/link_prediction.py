@@ -28,30 +28,32 @@ __all__ = ['random_guess',
 def perform_link_prediction(G_old, G_new, method, dict_ce):
     G_new = G_new.subgraph(G_old.nodes())
     k = G_new.number_of_edges()    # number of links chosen from prediction, also number of links in ground truth
+    if k == 0:
+        return 1
+    else:
+        if method == 'cn':
+            pred_links = common_neighbor_index(G_old)[0 : k]
+        if method == 'ja':
+            pred_links = jaccard_coefficient(G_old)[0 : k]
+        if method == 'aa':
+            pred_links = adamic_adar_index(G_old)[0 : k]
+        if method == 'ra':
+            pred_links = resource_allocation_index(G_old)[0 : k]
+        if method == 'clo1':
+            pred_links = closure_similarity_index(G_old, dict_ce)[0 : k]
+        if method == 'clo2':
+            pred_links = closure_similarity_index_two(G_old, dict_ce)[0 : k]
+        if method == 'dgr':
+            pred_links = degree_similarity_index(G_old)[0 : k]
+        # clo3 is only for directed network
+        # if method == 'clo3':
+        #     pred_links = closure_similarity_index_three(G_old, dict_ce)[0 : k]
 
-    if method == 'cn':
-        pred_links = common_neighbor_index(G_old)[0 : k]
-    if method == 'ja':
-        pred_links = jaccard_coefficient(G_old)[0 : k]
-    if method == 'aa':
-        pred_links = adamic_adar_index(G_old)[0 : k]
-    if method == 'ra':
-        pred_links = resource_allocation_index(G_old)[0 : k]
-    if method == 'clo1':
-        pred_links = closure_similarity_index(G_old, dict_ce)[0 : k]
-    if method == 'clo2':
-        pred_links = closure_similarity_index_two(G_old, dict_ce)[0 : k]
-    if method == 'dgr':
-        pred_links = degree_similarity_index(G_old)[0 : k]
-    # clo3 is only for directed network
-    # if method == 'clo3':
-    #     pred_links = closure_similarity_index_three(G_old, dict_ce)[0 : k]
-
-    correct = 0
-    for e in pred_links:
-        if (e[0], e[1]) in G_new.edges():
-            correct += 1
-    return 100 * correct / k
+        correct = 0
+        for e in pred_links:
+            if (e[0], e[1]) in G_new.edges():
+                correct += 1
+        return 100 * correct / k
 
 
 # random guess precision
