@@ -144,6 +144,7 @@ def _weighted_triangles_and_otc_iter(G, nodes=None, weight='weight'):
         max_weight = 1
     else:
         max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
+
     if nodes is None:
         nodes_nbrs = G.adj.items()
     else:
@@ -519,22 +520,12 @@ def _cyc_pattern_iter(G, nodes=None):
 # another way to calculate weighted clustering co; replace _directed_weighted_triangles_and_degree_iter
 # paper:A general framework for weighted gene co-expression  network  analysis
 @not_implemented_for('multigraph')
-def _directed_weighted_triangles_and_otc(G, nodes=None, weight='weight'):
-    """ Return an iterator of
-    (node, directed_weighted_triangles, directed_weighted_center_opentriads).
-
-    Used for directed weighted clustering.
-
-    """
-    if weight is None or G.number_of_edges() == 0:
-        max_weight = 1
-    else:
-        max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
-
-    nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
+def _directed_weighted_triangles_and_otc_iter(G, max_weight, nodes=None, weight='weight'):
 
     def wt(u, v):
         return G[u][v].get(weight, 1) / max_weight
+
+    nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
 
     for i, preds, succs in nodes_nbrs:
         ipreds = set(preds) - {i}
@@ -668,13 +659,24 @@ def average_closure(G, nodes=None, weight=None, count_zeros=True):
     return sum(list_ce) / len(list_ce)
 
 
+
+#to speed up
+def get_max_weight(G, weight = 'weight'):
+    if weight is None or G.number_of_edges() == 0:
+        max_weight = 1
+    else:
+        max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
+    return max_weight
+
+
 def clustering(G, nodes=None, weight=None):
 
     if G.is_directed():
         # change to another way
         if weight is not None:
-            td_iter = _directed_weighted_triangles_and_otc(
-                G, nodes, weight)
+            max_weight = get_max_weight(G, weight)
+            td_iter = _directed_weighted_triangles_and_otc_iter(
+                G, max_weight, nodes, weight)
             clusterc = {v: 0 if t == 0 else t / (2 * otc)
                         for v, t, otc in td_iter}
         else:
@@ -727,7 +729,7 @@ def closure(G, nodes=None, weight=None):
         return closurec[nodes]
     return closurec
 
-# KEYFUNC: for source closure-co
+# not used
 def src_closure(G, nodes=None, weight=None):
 
     if G.is_directed():
@@ -745,7 +747,7 @@ def src_closure(G, nodes=None, weight=None):
     return closurec
 
 
-# KEYFUNC: for source closure-co
+# not used
 def tgt_closure(G, nodes=None, weight=None):
 
     if G.is_directed():
@@ -761,24 +763,6 @@ def tgt_closure(G, nodes=None, weight=None):
         # Return the value of the sole entry in the dictionary.
         return closurec[nodes]
     return closurec
-
-
-# KEYFUNC
-# def closure_patterns(G, nodes=None, weight=None):
-#
-#     if G.is_directed():
-#         if weight is not None:
-#             pass
-#         else:
-#             pattern_iter = _directed_four_patterns_iter(G, nodes)
-#
-#             closurec = {v: [0, 0, 0, 0] if (th == 0 and tm == 0 and te == 0 and tc == 0) else [th / oth, tm / otm, te / ote, tc / otc]
-#                         for v, th, tm, te, tc, oth, otm, ote, otc in pattern_iter}
-#
-#     if nodes in G:
-#         # Return the value of the sole entry in the dictionary.
-#         return closurec[nodes]
-#     return closurec
 
 
 def head_closure(G, nodes=None, weight=None):
