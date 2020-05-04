@@ -1,5 +1,19 @@
 import networkx as nx
-__all__ = ['average_normalized_patterns_app']
+__all__ = ['average_normalized_patterns_app', 'get_key_info']
+
+
+def get_key_info(G, weight = None):
+    n = G.number_of_nodes()
+    m = G.number_of_edges()
+    k = m / n
+    r = nx.overall_reciprocity(G)
+    cc = nx.average_clustering(G, weight)
+    ce = nx.average_closure(G, weight)
+
+    res = [n, m, k, r, cc, ce]
+    return res
+
+
 
 def average_normalized_patterns_app(G, nodes = None):
     res = []
