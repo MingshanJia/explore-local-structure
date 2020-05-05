@@ -74,7 +74,7 @@ def link_pred_app(G, repeat=1, old_pct=0.5):
 
 # for very large networks, nodes > 10K. input graph G, repeat = 1 for dataset with timestamp, set repeat > 1 for dataset without timestamp
 # old_pct is the the percentage of old edges, based on which we predict new edges
-def link_pred_sample_app(G, repeat=1, sample_time=5, old_pct=0.5):
+def link_pred_sample_app(G, repeat=1, sample_time=5, sample_size=1000, old_pct=0.5):
     print('old edges percentage: %.1f' % old_pct)
     print('repeat time: %d' % repeat)
     res = []
@@ -111,7 +111,7 @@ def link_pred_sample_app(G, repeat=1, sample_time=5, old_pct=0.5):
             random_edge = random.choice(e_old)
             random_node = random_edge[0]
 
-            sample_nodes = get_sample_nodes(G_old, random_node, 1000)
+            sample_nodes = get_sample_nodes(G_old, random_node, sample_size)
             G_old_sampled = G_old.subgraph(sample_nodes)
 
             dict_ce = nx.closure(G_old_sampled)
