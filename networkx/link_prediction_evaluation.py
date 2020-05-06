@@ -95,6 +95,7 @@ def link_pred_sample_app(G, repeat=1, sample_time=5, sample_size=1000, old_pct=0
 
         if repeat == 1:
             e_all = sorted(e_all, key=lambda t: t[2].get('sec'))  # for dataset with timestamp
+            print("sort done\n")
         else:
             random.shuffle(e_all)
 
@@ -112,6 +113,7 @@ def link_pred_sample_app(G, repeat=1, sample_time=5, sample_size=1000, old_pct=0
             random_node = random_edge[0]
 
             sample_nodes = get_sample_nodes(G_old, random_node, sample_size)
+            print("sampling done")
             G_old_sampled = G_old.subgraph(sample_nodes)
 
             dict_ce = nx.closure(G_old_sampled)
