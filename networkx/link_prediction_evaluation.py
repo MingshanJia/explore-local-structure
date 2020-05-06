@@ -2,7 +2,8 @@ import random
 import networkx as nx
 
 __all__ = ['link_pred_app',
-           'link_pred_sample_app']
+           'link_pred_sample_app',
+           'link_pred_sample_app_2']
 
 
 # for not very large networks, nodes < 10K.
