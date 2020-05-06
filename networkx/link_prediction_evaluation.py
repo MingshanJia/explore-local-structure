@@ -90,25 +90,26 @@ def link_pred_sample_app_2(G, repeat=1, sample_time=10, sample_size=5000, old_pc
     e_all = list(G.edges(data=True))
            
     for i in range(0, sample_time):
-        print('sample %d' % i)       
+        print('sample: %d' % i)       
         random_edge = random.choice(e_all)
         random_node = random_edge[0]
         sample_nodes = get_sample_nodes(G, random_node, sample_size)        
         print("sampling done")
         G_sampled = G.subgraph(sample_nodes)
-        e_all = list(G_sampled.edges(data=True))
-        k = round(len(e_all) * old_pct)  
+        e_sampled = list(G_sampled.edges(data=True))
+        k = round(len(e_sampled) * old_pct)  
+        print('k = %d' % k)    
 
         for n in range(0, repeat):
             print('repeat = %d' % n)
 
             if repeat == 1:
-                e_all = sorted(e_all, key=lambda t: t[2].get('sec'))  # for dataset with timestamp
+                e_sampled = sorted(e_sampled, key=lambda t: t[2].get('sec'))  # for dataset with timestamp
             else:
-                random.shuffle(e_all)
+                random.shuffle(e_sampled)
 
-            e_old = e_all[: k]
-            e_new = e_all[k:]
+            e_old = e_sampled[: k]
+            e_new = e_sampled[k:]
             G_old = nx.DiGraph()
             G_new = nx.DiGraph()
             G_old.add_edges_from(e_old)
