@@ -239,6 +239,9 @@ def get_sample_nodes(G, random_node, sample_size):
             for nbr in nx.all_neighbors(G, n):
                 if nbr not in res_list:
                     res_list.append(nbr)
+                    # return faster
+                    if len(res_list) == sample_size:
+                        return res_list          
             visited_list.append(n)
 
         work_list = [n for n in res_list if n not in visited_list]
