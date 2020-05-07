@@ -2,8 +2,7 @@ import random
 import networkx as nx
 
 __all__ = ['link_pred_app',
-           'link_pred_sample_app',
-           'link_pred_sample_app_2']
+           'link_pred_sample_app']
 
 
 # for not very large networks, nodes < 10K.
@@ -75,7 +74,7 @@ def link_pred_app(G, repeat=1, old_pct=0.5):
 
 
 # sample 5K as G, then split into G_old and G_new
-def link_pred_sample_app_2(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
+def link_pred_sample_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
     print('sample time : %d' % sample_time)     
     print('repeat split time: %d' % repeat)
     print('old edges percentage: %.1f' % old_pct)
@@ -146,9 +145,8 @@ def link_pred_sample_app_2(G, repeat=1, sample_time=10, sample_size=5000, old_pc
     return res
 
 
-# for very large networks, nodes > 10K. input graph G, repeat = 1 for dataset with timestamp, set repeat > 1 for dataset without timestamp
-# old_pct is the the percentage of old edges, based on which we predict new edges
-def link_pred_sample_app(G, repeat=1, sample_time=5, sample_size=1000, old_pct=0.5):
+#not used
+def link_pred_sample_app_2(G, repeat=1, sample_time=5, sample_size=1000, old_pct=0.5):
     print('old edges percentage: %.1f' % old_pct)
     print('repeat time: %d' % repeat)
     res = []

@@ -1,5 +1,7 @@
 import networkx as nx
-__all__ = ['average_normalized_patterns_app', 'get_key_info']
+import pandas as pd
+
+__all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_cc_ce_df']
 
 
 def get_key_info(G, weight = None):
@@ -67,3 +69,18 @@ def average_normalized_patterns_app(G, nodes = None):
     res.append(sum(normalized_cyc.values()) / length)
 
     return res
+
+def get_cc_ce_df(G, weight = None):
+    cc = nx.clustering(G, weight = weight)
+    ce = nx.closure(G, weight = weight)
+    node_cc_ce = []
+    for k, v1, v2 in common_entries(cc, ce):
+        node_cc_ce.append([k, v1, v2[0]])
+    node_cc_ce = sorted(node_cc_ce, key=lambda t:t[1])
+    df_cc_ce = pd.DataFrame(node_cc_ce, columns=['node-id','cc', 'ce'])
+    return df_cc_ce
+
+
+def common_entries(*dcts):
+    for i in set(dcts[0]).intersection(*dcts[1:]):
+        yield (i,) + tuple(d[i] for d in dcts)
