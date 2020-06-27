@@ -857,6 +857,31 @@ def transitivity(G):
     return 0 if triangles == 0 else triangles / contri
 
 
+# used in quad-co
+def quadrangle_coefficient(G, nodes=None):
+    if nodes is None:
+        node_iter = G
+    else:
+        node_iter = G.nbunch_iter(nodes)
+    clustering = {}
+    for v in node_iter:
+        clustering[v] = 0
+        potential = 0
+        for u, w in combinations(G[v], 2):
+            squares = len((set(G[u]) & set(G[w])) - {v}) * 2
+            clustering[v] += squares
+            degm = 1
+            if w in G[u]:
+                degm += 1
+            potential += (len(G[u]) - degm) + (len(G[w]) - degm) + squares  # changed multiply to addition
+        if potential > 0:
+            clustering[v] /= potential
+    if nodes in G:
+        # Return the value of the sole entry in the dictionary.
+        return clustering[nodes]
+    return clustering
+
+
 def square_clustering(G, nodes=None):
     r""" Compute the squares clustering coefficient for nodes.
 
