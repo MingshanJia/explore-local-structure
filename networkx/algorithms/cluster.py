@@ -860,19 +860,6 @@ def transitivity(G):
 def square_clustering(G, nodes=None):
     r""" Compute the squares clustering coefficient for nodes.
 
-    For each node return the fraction of possible squares that exist at
-    the node [1]_
-
-    .. math::
-       C_4(v) = \frac{ \sum_{u=1}^{k_v}
-       \sum_{w=u+1}^{k_v} q_v(u,w) }{ \sum_{u=1}^{k_v}
-       \sum_{w=u+1}^{k_v} [a_v(u,w) + q_v(u,w)]},
-
-    where :math:`q_v(u,w)` are the number of common neighbors of :math:`u` and
-    :math:`w` other than :math:`v` (ie squares), and :math:`a_v(u,w) = (k_u -
-    (1+q_v(u,w)+\theta_{uv}))(k_w - (1+q_v(u,w)+\theta_{uw}))`, where
-    :math:`\theta_{uw} = 1` if :math:`u` and :math:`w` are connected and 0
-    otherwise.
 
     Parameters
     ----------
@@ -907,6 +894,9 @@ def square_clustering(G, nodes=None):
     .. [1] Pedro G. Lind, Marta C. González, and Hans J. Herrmann. 2005
         Cycles and clustering in bipartite networks.
         Physical Review E (72) 056127.
+       [2] Peng Zhang 2008
+        Clustering coefficient and community structure of bipartite networks
+
     """
     if nodes is None:
         node_iter = G
@@ -922,7 +912,7 @@ def square_clustering(G, nodes=None):
             degm = squares + 1
             if w in G[u]:
                 degm += 1
-            potential += (len(G[u]) - degm) * (len(G[w]) - degm) + squares
+            potential += (len(G[u]) - degm) + (len(G[w]) - degm) + squares  # changed multiply to addition
         if potential > 0:
             clustering[v] /= potential
     if nodes in G:
