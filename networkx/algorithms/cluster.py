@@ -8,7 +8,7 @@ import networkx as nx
 from networkx.utils import not_implemented_for
 
 __all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity',
-           'square_clustering', 'generalized_degree', 'average_closure', 'closure',
+           'square_clustering', 'quadrangle_coefficient', 'quadrangle_coefficient_2', 'generalized_degree', 'average_closure', 'closure',
            'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure']
 
 
@@ -857,7 +857,37 @@ def transitivity(G):
     return 0 if triangles == 0 else triangles / contri
 
 
-# used in quad-co
+
+# proposed algorithm
+# should be faster or same?
+def quadrangle_coefficient_2(G, nodes=None):
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+    quad_co = {}
+
+    for v, v_nbrs in nodes_nbrs:
+        quad_co[v] = 0
+        quad = 0
+        potential = 0
+        vs = set(v_nbrs) - {v}
+        for u in vs:
+            u_nbrs = set(G[u]) - {v}
+            for w in u_nbrs:
+                if w in G[v]:
+                    potential += len(G[v]) - 2
+                potential += len(G[v]) - 1
+                quad += len((set(G[w]) & set(G[v])) - {v}) - 1     # numerator: 2 times number of quadrangles
+        if potential > 0:
+            quad_co[v] = quad / potential
+
+    if nodes in G:
+        return quad_co[nodes]
+    return quad_co
+
+
+# based on square_co below
 def quadrangle_coefficient(G, nodes=None):
     if nodes is None:
         node_iter = G
@@ -873,7 +903,7 @@ def quadrangle_coefficient(G, nodes=None):
             degm = 1
             if w in G[u]:
                 degm += 1
-            potential += (len(G[u]) - degm) + (len(G[w]) - degm) + squares  # changed multiply to addition
+            potential += (len(G[u]) - degm) + (len(G[w]) - degm)
         if potential > 0:
             clustering[v] /= potential
     if nodes in G:
