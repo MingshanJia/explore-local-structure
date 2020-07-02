@@ -8,7 +8,9 @@ import networkx as nx
 from networkx.utils import not_implemented_for
 
 __all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity',
-           'square_clustering', 'quadrangle_coefficient', 'inner_quadrangle_coefficient', 'outer_quadrangle_coefficient', 'quadrangle_coefficient_iter', 'generalized_degree', 'average_closure', 'closure',
+           'square_clustering', 'quadrangle_coefficient', 'inner_quadrangle_coefficient','outer_quadrangle_coefficient',
+           'quadrangle_coefficient_iter', 'average_inner_quad_co', 'average_outer_quad_co',
+           'generalized_degree', 'average_closure', 'closure',
            'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure']
 
 
@@ -856,7 +858,7 @@ def transitivity(G):
     contri = sum(d * (d - 1) for v, d, t, _ in _triangles_and_degree_iter(G))
     return 0 if triangles == 0 else triangles / contri
 
-
+# **************************************************************************** Quadrangle Coefficient ************************************************************
 # for calculating inner-quad-co and outer-quad-co
 def quadrangle_coefficient_iter(G, nodes=None):
     if nodes is None:
@@ -881,7 +883,7 @@ def quadrangle_coefficient_iter(G, nodes=None):
         yield (v, quad, inner_quad, outer_quad)
 
 # inner quadrangle coefficient
-def inner_quadrangle_coefficient(G, nodes=None):
+def inner_quadrangle_coefficient(G, nodes=None, weight=None):
     qc_iter = quadrangle_coefficient_iter(G, nodes)
     inner_quad_co = {v: 0 if q == 0 else q / in_q for
                 v, q, in_q, _ in qc_iter}
@@ -890,13 +892,29 @@ def inner_quadrangle_coefficient(G, nodes=None):
     return inner_quad_co
 
 # outer quadrangle coefficient
-def outer_quadrangle_coefficient(G, nodes=None):
+def outer_quadrangle_coefficient(G, nodes=None, weight=None):
     qc_iter = quadrangle_coefficient_iter(G, nodes)
     outer_quad_co = {v: 0 if q == 0 else q / out_q for
                 v, q, _, out_q in qc_iter}
     if nodes in G:
         return outer_quad_co[nodes]
     return outer_quad_co
+
+# average inner quadrangle coefficient
+def average_inner_quad_co(G, nodes=None, weight=None, count_zeros=True):
+
+    c = inner_quadrangle_coefficient(G, nodes, weight=weight).values()
+    if not count_zeros:
+        c = [v for v in c if v > 0]
+    return sum(c) / len(c)
+
+# average outer quadrangle coefficient
+def average_outer_quad_co(G, nodes=None, weight=None, count_zeros=True):
+
+    c = outer_quadrangle_coefficient(G, nodes, weight=weight).values()
+    if not count_zeros:
+        c = [v for v in c if v > 0]
+    return sum(c) / len(c)
 
 
 # should be faster or same?
@@ -954,7 +972,6 @@ def quadrangle_coefficient(G, nodes=None):
 
 def square_clustering(G, nodes=None):
     r""" Compute the squares clustering coefficient for nodes.
-
 
     Parameters
     ----------
