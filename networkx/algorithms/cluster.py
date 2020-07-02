@@ -8,7 +8,7 @@ import networkx as nx
 from networkx.utils import not_implemented_for
 
 __all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity',
-           'square_clustering', 'quadrangle_coefficient', 'quadrangle_coefficient_2', 'generalized_degree', 'average_closure', 'closure',
+           'square_clustering', 'quadrangle_coefficient', 'inner_quadrangle_coefficient', 'outer_quadrangle_coefficient', 'quadrangle_coefficient_iter', 'generalized_degree', 'average_closure', 'closure',
            'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure']
 
 
@@ -857,34 +857,74 @@ def transitivity(G):
     return 0 if triangles == 0 else triangles / contri
 
 
-
-# proposed algorithm
-# should be faster or same?
-def quadrangle_coefficient_2(G, nodes=None):
+# for calculating inner-quad-co and outer-quad-co
+def quadrangle_coefficient_iter(G, nodes=None):
     if nodes is None:
         nodes_nbrs = G.adj.items()
     else:
         nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
-    quad_co = {}
 
     for v, v_nbrs in nodes_nbrs:
-        quad_co[v] = 0
         quad = 0
-        potential = 0
+        inner_quad = 0
+        outer_quad = 0
         vs = set(v_nbrs) - {v}
         for u in vs:
             u_nbrs = set(G[u]) - {v}
             for w in u_nbrs:
                 if w in G[v]:
-                    potential += len(G[v]) - 2
-                potential += len(G[v]) - 1
+                    inner_quad += len(G[v]) - 2
+                inner_quad += len(G[v]) - 1
                 quad += len((set(G[w]) & set(G[v])) - {v}) - 1     # numerator: 2 times number of quadrangles
-        if potential > 0:
-            quad_co[v] = quad / potential
+                outer_quad += len(set(G[w])) - 1
 
+        yield (v, quad, inner_quad, outer_quad)
+
+# inner quadrangle coefficient
+def inner_quadrangle_coefficient(G, nodes=None):
+    qc_iter = quadrangle_coefficient_iter(G, nodes)
+    inner_quad_co = {v: 0 if q == 0 else q / in_q for
+                v, q, in_q, _ in qc_iter}
     if nodes in G:
-        return quad_co[nodes]
-    return quad_co
+        return inner_quad_co[nodes]
+    return inner_quad_co
+
+# outer quadrangle coefficient
+def outer_quadrangle_coefficient(G, nodes=None):
+    qc_iter = quadrangle_coefficient_iter(G, nodes)
+    outer_quad_co = {v: 0 if q == 0 else q / out_q for
+                v, q, _, out_q in qc_iter}
+    if nodes in G:
+        return outer_quad_co[nodes]
+    return outer_quad_co
+
+
+# should be faster or same?
+# def inner_quadrangle_coefficient(G, nodes=None):
+#     if nodes is None:
+#         nodes_nbrs = G.adj.items()
+#     else:
+#         nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+#     quad_co = {}
+#
+#     for v, v_nbrs in nodes_nbrs:
+#         quad_co[v] = 0
+#         quad = 0
+#         potential = 0
+#         vs = set(v_nbrs) - {v}
+#         for u in vs:
+#             u_nbrs = set(G[u]) - {v}
+#             for w in u_nbrs:
+#                 if w in G[v]:
+#                     potential += len(G[v]) - 2
+#                 potential += len(G[v]) - 1
+#                 quad += len((set(G[w]) & set(G[v])) - {v}) - 1     # numerator: 2 times number of quadrangles
+#         if potential > 0:
+#             quad_co[v] = quad / potential
+#
+#     if nodes in G:
+#         return quad_co[nodes]
+#     return quad_co
 
 
 # based on square_co below
