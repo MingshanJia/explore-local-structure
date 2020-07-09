@@ -858,6 +858,7 @@ def transitivity(G):
     contri = sum(d * (d - 1) for v, d, t, _ in _triangles_and_degree_iter(G))
     return 0 if triangles == 0 else triangles / contri
 
+
 # **************************************************************************** Quadrangle Coefficient ************************************************************
 # for calculating inner-quad-co and outer-quad-co
 def quadrangle_coefficient_iter(G, nodes=None):
@@ -866,21 +867,22 @@ def quadrangle_coefficient_iter(G, nodes=None):
     else:
         nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
 
-    for v, v_nbrs in nodes_nbrs:
+    for i, nbrs in nodes_nbrs:
         quad = 0
         inner_quad = 0
         outer_quad = 0
-        vs = set(v_nbrs) - {v}
-        for u in vs:
-            u_nbrs = set(G[u]) - {v}
-            for w in u_nbrs:
-                if w in G[v]:
-                    inner_quad += len(G[v]) - 2
-                inner_quad += len(G[v]) - 1
-                quad += len((set(G[w]) & set(G[v])) - {v}) - 1     # numerator: 2 times number of quadrangles
-                outer_quad += len(set(G[w])) - 1
+        inbrs = set(nbrs) - {i}
+        for j in inbrs:
+            jnbrs = set(G[j]) - {i}
+            for k in jnbrs:
+                if k in G[i]:
+                    inner_quad += len(G[i]) - 2
+                    outer_quad += len(set(G[k])) - 2
+                inner_quad += len(G[i]) - 1
+                outer_quad += len(set(G[k])) - 1
+                quad += len((set(G[k]) & set(G[i])) - {i} - {k}) - 1  # numerator: 2 times number of quadrangles
 
-        yield (v, quad, inner_quad, outer_quad)
+        yield (i, quad, inner_quad, outer_quad)
 
 # inner quadrangle coefficient
 def inner_quadrangle_coefficient(G, nodes=None, weight=None):
@@ -946,6 +948,7 @@ def average_outer_quad_co(G, nodes=None, weight=None, count_zeros=True):
 
 
 # based on square_co below
+# same value as inner_quad_co
 def quadrangle_coefficient(G, nodes=None):
     if nodes is None:
         node_iter = G
