@@ -878,8 +878,9 @@ def quadrangle_coefficient_iter(G, nodes=None):
                 if k in G[i]:
                     inner_quad += len(G[i]) - 2
                     outer_quad += len(set(G[k])) - 2
-                inner_quad += len(G[i]) - 1
-                outer_quad += len(set(G[k])) - 1
+                else:
+                    inner_quad += len(G[i]) - 1
+                    outer_quad += len(set(G[k])) - 1
                 quad += len((set(G[k]) & set(G[i])) - {i} - {k}) - 1  # numerator: 2 times number of quadrangles
 
         yield (i, quad, inner_quad, outer_quad)
