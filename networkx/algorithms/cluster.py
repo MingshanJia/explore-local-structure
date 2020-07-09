@@ -885,20 +885,66 @@ def quadrangle_coefficient_iter(G, nodes=None):
 
         yield (i, quad, inner_quad, outer_quad)
 
+
+# for calculating weighted inner-quad-co and outer-quad-co
+def weighted_quadrangle_coefficient_iter(G, nodes=None, weight='weight'):
+
+    if weight is None or G.number_of_edges() == 0:
+        max_weight = 1
+    else:
+        max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
+
+    def wt(u, v):
+        return G[u][v].get(weight, 1) / max_weight
+
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    for i, nbrs in nodes_nbrs:
+        weighted_quad = 0
+        weighted_inner_quad = 0
+        weighted_outer_quad = 0
+        inbrs = set(nbrs) - {i}
+        for j in inbrs:
+            jnbrs = set(G[j]) - {i}
+            for k in jnbrs:
+                if k in G[i]:
+                    weighted_inner_quad += sum(wt(i, j) * wt(j, k) * wt(i, l) for l in (inbrs - {j} - {k}))
+                else:
+                    weighted_inner_quad += sum(wt(i, j) * wt(j, k) * wt(i, l) for l in (inbrs - {j}))
+                # no need to put in if-else because {i} is deducted from k's neighbors
+                weighted_outer_quad += sum(wt(i, j) * wt(j, k) * wt(k, l) for l in (set(G[k]) - {j} - {i}))
+                weighted_quad += sum(wt(i, j) * wt(j, k) * wt(i, l) * wt(k, l) for l in (inbrs & set(G[k]) - {j}))  # numerator: 2 times number of quadrangles
+
+        yield (i, weighted_quad, weighted_inner_quad, weighted_outer_quad)
+
+
 # inner quadrangle coefficient
 def inner_quadrangle_coefficient(G, nodes=None, weight=None):
-    qc_iter = quadrangle_coefficient_iter(G, nodes)
-    inner_quad_co = {v: 0 if q == 0 else q / in_q for
-                v, q, in_q, _ in qc_iter}
+    if weight is not None:
+        qc_iter = weighted_quadrangle_coefficient_iter(G, nodes, weight)
+        inner_quad_co = {v: 0 if q == 0 else q / in_q for
+                         v, q, in_q, _ in qc_iter}
+    else:
+        qc_iter = quadrangle_coefficient_iter(G, nodes)
+        inner_quad_co = {v: 0 if q == 0 else q / in_q for
+                    v, q, in_q, _ in qc_iter}
     if nodes in G:
         return inner_quad_co[nodes]
     return inner_quad_co
 
 # outer quadrangle coefficient
 def outer_quadrangle_coefficient(G, nodes=None, weight=None):
-    qc_iter = quadrangle_coefficient_iter(G, nodes)
-    outer_quad_co = {v: 0 if q == 0 else q / out_q for
-                v, q, _, out_q in qc_iter}
+    if weight is not None:
+        qc_iter = weighted_quadrangle_coefficient_iter(G, nodes, weight)
+        outer_quad_co = {v: 0 if q == 0 else q / out_q for
+                         v, q, _, out_q in qc_iter}
+    else:
+        qc_iter = quadrangle_coefficient_iter(G, nodes)
+        outer_quad_co = {v: 0 if q == 0 else q / out_q for
+                    v, q, _, out_q in qc_iter}
     if nodes in G:
         return outer_quad_co[nodes]
     return outer_quad_co
