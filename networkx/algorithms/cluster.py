@@ -875,13 +875,18 @@ def quadrangle_coefficient_iter(G, nodes=None):
         for j in inbrs:
             jnbrs = set(G[j]) - {i}
             for k in jnbrs:
-                if k in G[i]:
-                    inner_quad += len(G[i]) - 2
-                    outer_quad += len(set(G[k])) - 2
-                else:
-                    inner_quad += len(G[i]) - 1
-                    outer_quad += len(set(G[k])) - 1
-                quad += len((set(G[k]) & set(G[i])) - {i} - {k}) - 1  # numerator: 2 times number of quadrangles
+                quad += len((set(G[k]) & set(G[i])) - {j})  # numerator: 2 times number of quadrangles
+                inner_quad += len(set(G[i]) - {j} - {k})
+                outer_quad += len(set(G[k]) - {j} - {i})
+
+            # for k in jnbrs:
+            #     if k in G[i]:
+            #         inner_quad += len(G[i]) - 2
+            #         outer_quad += len(set(G[k])) - 2
+            #     else:
+            #         inner_quad += len(G[i]) - 1
+            #         outer_quad += len(set(G[k])) - 1
+            #     quad += len((set(G[k]) & set(G[i])) - {i} - {k}) - 1  # numerator: 2 times number of quadrangles
 
         yield (i, quad, inner_quad, outer_quad)
 
