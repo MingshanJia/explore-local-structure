@@ -7,9 +7,9 @@ import networkx as nx
 
 from networkx.utils import not_implemented_for
 
-__all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity',
+__all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity', 'triangles_and_otc', 'triangles_and_ote',
            'square_clustering', 'quadrangle_coefficient', 'inner_quadrangle_coefficient','outer_quadrangle_coefficient',
-           'quadrangle_coefficient_iter', 'average_inner_quad_co', 'average_outer_quad_co',
+           'quad_iquad_oquad', 'average_inner_quad_co', 'average_outer_quad_co',
            'generalized_degree', 'average_closure', 'closure',
            'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure']
 
@@ -725,6 +725,24 @@ def closure(G, nodes=None, weight=None):
         return closurec[nodes]
     return closurec
 
+
+# to get number of triangels and centre-node-based open triads
+def triangles_and_otc(G, nodes=None):
+    td_iter =  _triangles_and_degree_iter(G, nodes)
+    tri_otc = {v : [t, d*(d-1)] for v, d, t, _ in td_iter}
+    if nodes in G:
+        return tri_otc[nodes]
+    return tri_otc
+
+# to get number of triangels and end-node-based open triads
+def triangles_and_ote(G, nodes=None):
+    td_iter = _triangles_and_opentriads_iter(G, nodes)
+    tri_ote = {v : [t, ote] for v, t, ote in td_iter}
+    if nodes in G:
+        return tri_ote[nodes]
+    return tri_ote
+
+
 # not used
 def src_closure(G, nodes=None, weight=None):
 
@@ -891,6 +909,13 @@ def quadrangle_coefficient_iter(G, nodes=None):
 
         yield (i, quad, inner_quad, outer_quad)
 
+def quad_iquad_oquad(G, nodes=None):
+
+    qc_iter = quadrangle_coefficient_iter(G, nodes)
+    res = {v: [q, iq, oq]  for v, q, iq, oq in qc_iter}
+    if nodes in G:
+        return res[nodes]
+    return res
 
 # for calculating weighted inner-quad-co and outer-quad-co
 def weighted_quadrangle_coefficient_iter(G, nodes=None, weight='weight'):
@@ -951,6 +976,7 @@ def outer_quadrangle_coefficient(G, nodes=None, weight=None):
     if nodes in G:
         return outer_quad_co[nodes]
     return outer_quad_co
+
 
 # average inner quadrangle coefficient
 def average_inner_quad_co(G, nodes=None, weight=None, count_zeros=True):
