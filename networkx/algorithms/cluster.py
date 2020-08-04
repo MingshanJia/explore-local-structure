@@ -89,13 +89,13 @@ def _triangles_and_opentriads_iter(G, nodes=None):
     for v, v_nbrs in nodes_nbrs:
         vs = set(v_nbrs) - {v}
         ot = 0
+        tri = 0
         for w in vs:
             ns = set(G[w]) - {w}
             ot += len(ns) - 1
+            tri += len(vs & ns)
 
-        gen_degree = Counter(len(vs & (set(G[w]) - {w})) for w in vs)
-        ntriangles = sum(k * val for k, val in gen_degree.items())
-        yield (v, ntriangles, ot)
+        yield (v, tri, ot)
 
 
 # @not_implemented_for('multigraph')
@@ -860,6 +860,7 @@ def transitivity(G):
 
 
 # **************************************************************************** Quadrangle Coefficient ************************************************************
+#TODO: self-loop
 # for calculating inner-quad-co and outer-quad-co
 def quadrangle_coefficient_iter(G, nodes=None):
     if nodes is None:
@@ -915,13 +916,10 @@ def weighted_quadrangle_coefficient_iter(G, nodes=None, weight='weight'):
         for j in inbrs:
             jnbrs = set(G[j]) - {i}
             for k in jnbrs:
-                if k in G[i]:
-                    weighted_inner_quad += sum(wt(i, j) * wt(j, k) * wt(i, l) for l in (inbrs - {j} - {k}))
-                else:
-                    weighted_inner_quad += sum(wt(i, j) * wt(j, k) * wt(i, l) for l in (inbrs - {j}))
-                # no need to put in if-else because {i} is deducted from k's neighbors
+                weighted_quad += sum(wt(i, j) * wt(j, k) * wt(i, l) * wt(k, l) for l in
+                                     (inbrs & set(G[k]) - {j}))  # numerator: 2 times number of quadrangles
+                weighted_inner_quad += sum(wt(i, j) * wt(j, k) * wt(i, l) for l in (inbrs - {j} - {k}))
                 weighted_outer_quad += sum(wt(i, j) * wt(j, k) * wt(k, l) for l in (set(G[k]) - {j} - {i}))
-                weighted_quad += sum(wt(i, j) * wt(j, k) * wt(i, l) * wt(k, l) for l in (inbrs & set(G[k]) - {j}))  # numerator: 2 times number of quadrangles
 
         yield (i, weighted_quad, weighted_inner_quad, weighted_outer_quad)
 
