@@ -8,6 +8,7 @@ import networkx as nx
 from networkx.utils import not_implemented_for
 
 __all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity', 'triangles_and_otc', 'triangles_and_ote',
+           'global_clustering', 'quadrangle_coefficient_iter', 'global_quadrangle',
            'square_clustering', 'quadrangle_coefficient', 'inner_quadrangle_coefficient','outer_quadrangle_coefficient',
            'quad_iquad_oquad', 'average_inner_quad_co', 'average_outer_quad_co',
            'generalized_degree', 'average_closure', 'closure',
@@ -743,6 +744,25 @@ def triangles_and_ote(G, nodes=None):
     return tri_ote
 
 
+# get global clustering, same for global closure
+def global_clustering(G, nodes=None, weight=None):
+    if G.is_directed():
+        if weight is not None:
+            pass
+        else:
+            pass
+    else:
+        if weight is not None:
+            pass
+        else:
+            td_iter = _triangles_and_degree_iter(G, nodes)
+            t_ot_list = [[t, d*(d-1)] for _, d, t, _ in td_iter]
+            t_sum = sum(row[0] for row in t_ot_list)
+            ot_sum = sum(row[1] for row in t_ot_list)
+
+    return t_sum / ot_sum
+
+
 # not used
 def src_closure(G, nodes=None, weight=None):
 
@@ -916,6 +936,17 @@ def quad_iquad_oquad(G, nodes=None):
     if nodes in G:
         return res[nodes]
     return res
+
+# get global quadrangle coef., same for i-quad and o-quad
+def global_quadrangle(G, nodes=None, weight=None):
+    if weight is not None:
+        pass
+    else:
+        qd_iter = quadrangle_coefficient_iter(G, nodes)
+        q_iq_list = [[q, iq] for _, q, iq, _ in qd_iter]
+        q_sum = sum(row[0] for row in q_iq_list)
+        iq_sum = sum(row[1] for row in q_iq_list)
+    return q_sum / iq_sum
 
 # for calculating weighted inner-quad-co and outer-quad-co
 def weighted_quadrangle_coefficient_iter(G, nodes=None, weight='weight'):
