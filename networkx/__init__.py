@@ -42,6 +42,7 @@ pages = {11--15}
 # These are import orderwise
 from networkx.link_prediction_evaluation import *
 from networkx.dominant_pattern_evaluation import *
+from networkx.degree_coef_corr import *
 
 from networkx.exception import *
 import networkx.utils
