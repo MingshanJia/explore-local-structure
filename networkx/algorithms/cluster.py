@@ -926,8 +926,43 @@ def quadrangle_coefficient_iter(G, nodes=None):
             #         inner_quad += len(G[i]) - 1
             #         outer_quad += len(set(G[k])) - 1
             #     quad += len((set(G[k]) & set(G[i])) - {i} - {k}) - 1  # numerator: 2 times number of quadrangles
-
         yield (i, quad, inner_quad, outer_quad)
+
+
+def i_quad_coef_iter(G, nodes=None):
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    for i, nbrs in nodes_nbrs:
+        quad = 0
+        inner_quad = 0
+        inbrs = set(nbrs) - {i}
+        for j in inbrs:
+            jnbrs = set(G[j]) - {i}
+            for k in jnbrs:
+                quad += len((set(G[k]) & set(G[i])) - {j})  # numerator: 2 times number of quadrangles
+                inner_quad += len(set(G[i]) - {j} - {k})
+        yield (i, quad, inner_quad)
+
+def o_quad_coef_iter(G, nodes=None):
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    for i, nbrs in nodes_nbrs:
+        quad = 0
+        outer_quad = 0
+        inbrs = set(nbrs) - {i}
+        for j in inbrs:
+            jnbrs = set(G[j]) - {i}
+            for k in jnbrs:
+                quad += len((set(G[k]) & set(G[i])) - {j})  # numerator: 2 times number of quadrangles
+                outer_quad += len(set(G[k]) - {j} - {i})
+        yield (i, quad, outer_quad)
+
 
 def quad_iquad_oquad(G, nodes=None):
 
@@ -980,6 +1015,7 @@ def weighted_quadrangle_coefficient_iter(G, nodes=None, weight='weight'):
         yield (i, weighted_quad, weighted_inner_quad, weighted_outer_quad)
 
 
+# TODO: weighted divide
 # inner quadrangle coefficient
 def inner_quadrangle_coefficient(G, nodes=None, weight=None):
     if weight is not None:
@@ -987,9 +1023,9 @@ def inner_quadrangle_coefficient(G, nodes=None, weight=None):
         inner_quad_co = {v: 0 if q == 0 else q / in_q for
                          v, q, in_q, _ in qc_iter}
     else:
-        qc_iter = quadrangle_coefficient_iter(G, nodes)
+        qc_iter = i_quad_coef_iter(G, nodes)
         inner_quad_co = {v: 0 if q == 0 else q / in_q for
-                    v, q, in_q, _ in qc_iter}
+                    v, q, in_q, in qc_iter}
     if nodes in G:
         return inner_quad_co[nodes]
     return inner_quad_co
@@ -1001,9 +1037,9 @@ def outer_quadrangle_coefficient(G, nodes=None, weight=None):
         outer_quad_co = {v: 0 if q == 0 else q / out_q for
                          v, q, _, out_q in qc_iter}
     else:
-        qc_iter = quadrangle_coefficient_iter(G, nodes)
+        qc_iter = o_quad_coef_iter(G, nodes)
         outer_quad_co = {v: 0 if q == 0 else q / out_q for
-                    v, q, _, out_q in qc_iter}
+                    v, q, out_q in qc_iter}
     if nodes in G:
         return outer_quad_co[nodes]
     return outer_quad_co
@@ -1026,34 +1062,9 @@ def average_outer_quad_co(G, nodes=None, weight=None, count_zeros=True):
     return sum(c) / len(c)
 
 
-# should be faster or same?
-# def inner_quadrangle_coefficient(G, nodes=None):
-#     if nodes is None:
-#         nodes_nbrs = G.adj.items()
-#     else:
-#         nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
-#     quad_co = {}
-#
-#     for v, v_nbrs in nodes_nbrs:
-#         quad_co[v] = 0
-#         quad = 0
-#         potential = 0
-#         vs = set(v_nbrs) - {v}
-#         for u in vs:
-#             u_nbrs = set(G[u]) - {v}
-#             for w in u_nbrs:
-#                 if w in G[v]:
-#                     potential += len(G[v]) - 2
-#                 potential += len(G[v]) - 1
-#                 quad += len((set(G[w]) & set(G[v])) - {v}) - 1     # numerator: 2 times number of quadrangles
-#         if potential > 0:
-#             quad_co[v] = quad / potential
-#
-#     if nodes in G:
-#         return quad_co[nodes]
-#     return quad_co
 
 
+# obsolete
 # based on square_co below
 # same value as inner_quad_co
 def quadrangle_coefficient(G, nodes=None):
