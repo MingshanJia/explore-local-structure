@@ -6,6 +6,7 @@ from networkx.algorithms.chains import *
 from networkx.algorithms.centrality import *
 from networkx.algorithms.chordal import *
 from networkx.algorithms.cluster import *
+from networkx.algorithms.quadrangle import *
 from networkx.algorithms.clique import *
 from networkx.algorithms.communicability_alg import *
 from networkx.algorithms.components import *
