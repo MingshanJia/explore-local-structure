@@ -7,8 +7,8 @@ import networkx as nx
 
 from networkx.utils import not_implemented_for
 
-__all__ = ['triangles', 'average_clustering', 'clustering', 'transitivity', 'triangles_and_otc', 'triangles_and_ote',
-           'global_clustering', 'generalized_degree', 'average_closure', 'closure',
+__all__ = ['triangles', 'number_of_triangles', 'average_clustering', 'clustering', 'transitivity', 'triangles_and_otc',
+           'triangles_and_ote', 'global_clustering', 'generalized_degree', 'average_closure', 'closure',
            'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure']
 
 
@@ -758,6 +758,14 @@ def global_clustering(G, nodes=None, weight=None):
             ot_sum = sum(row[1] for row in t_ot_list)
 
     return t_sum / ot_sum
+
+
+@not_implemented_for('directed')
+def number_of_triangles(G):
+    td_iter = _triangles_and_degree_iter(G)
+    t_ot_list = [[t, d * (d - 1)] for _, d, t, _ in td_iter]
+    t_sum = sum(row[0] for row in t_ot_list)
+    return t_sum / 6
 
 
 # not used

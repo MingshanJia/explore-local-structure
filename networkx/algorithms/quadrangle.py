@@ -5,7 +5,7 @@ import networkx as nx
 
 from networkx.utils import not_implemented_for
 
-__all__ = ['quadrangle_coefficient_iter', 'global_quadrangle',
+__all__ = ['quadrangle_coefficient_iter', 'global_quadrangle', 'number_of_quadrangles',
            'square_clustering', 'quadrangle_coefficient', 'inner_quadrangle_coefficient','outer_quadrangle_coefficient',
            'quad_iquad_oquad', 'average_inner_quad_co', 'average_outer_quad_co']
 
@@ -241,6 +241,14 @@ def global_quadrangle(G, nodes=None, weight=None):
         q_sum = sum(row[0] for row in q_iq_list)
         iq_sum = sum(row[1] for row in q_iq_list)
     return q_sum / iq_sum
+
+
+@not_implemented_for('directed')
+def number_of_quadrangles(G):
+    qd_iter = i_quad_coef_iter(G)
+    q_iq_list = [[q, iq] for _, q, iq in qd_iter]
+    q_sum = sum(row[0] for row in q_iq_list)
+    return q_sum / 8
 
 
 # ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

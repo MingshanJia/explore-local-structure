@@ -1,6 +1,6 @@
 import networkx as nx
 
-__all__ = ['degree_coefs_corr']
+__all__ = ['degree_coefs_corr', 'get_four_coefs']
 
 # if the last chunk is less than bin width, add it to the second to last bin
 def chunks(lst, n):
@@ -42,3 +42,15 @@ def degree_coefs_corr(G):
         if avg_oquad > 0:
             oquad.append(avg_oquad)
     return x, clu, clo, iquad, oquad
+
+
+def get_four_coefs(G):
+    clu = nx.clustering(G).values()
+    clo = nx.closure(G)
+    list_clo = []
+    for k, v in clo.items():
+        list_clo.append(v[0])
+    list_clo
+    iquad = nx.inner_quadrangle_coefficient(G).values()
+    oquad = nx.outer_quadrangle_coefficient(G).values()
+    return list(clu), list_clo, list(iquad), list(oquad)
