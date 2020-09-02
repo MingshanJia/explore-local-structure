@@ -929,6 +929,7 @@ def common_neighbors(G, u, v):
     # checks are executed eagerly.
     return (w for w in G[u] if w in G[v] and w not in (u, v))
 
+
 # @ChangeNote
 def directed_common_neighbors(G, u, v):
     """Returns the common neighbors of two nodes in a graph, from the meaning of u --> v.

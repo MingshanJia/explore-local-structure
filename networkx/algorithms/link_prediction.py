@@ -11,6 +11,7 @@ from networkx.utils import not_implemented_for
 
 __all__ = ['random_guess',
            'common_neighbor_index',
+           'common_neighbor_l3',
            'closure_similarity_index',
            'closure_similarity_index_two',
            'closure_similarity_index_three',
@@ -92,7 +93,21 @@ def common_neighbor_index(G, ebunch=None):
     return _apply_prediction(G, predict, ebunch)
 
 
-# KeyFunc: newly introduced
+# ChangeNote: newly added
+def common_neighbor_l3(G, ebunch=None):
+
+    def predict(G, u, v):
+        l3 = 0
+        u_nbrs = set(G[u]) - {u}
+        v_nbrs = set(G[v]) - {v}
+        for x in u_nbrs:
+            x_nbrs = set(G[x]) - {x} - {u}
+            l3 += len(x_nbrs & v_nbrs)
+        return l3
+
+    return _apply_prediction(G, predict, ebunch)
+
+# KeyFunc: newly introduced CCI
 def closure_similarity_index(G, dict_ce, ebunch=None):
 
     def predict(G, u, v):
@@ -104,7 +119,7 @@ def closure_similarity_index(G, dict_ce, ebunch=None):
     return _apply_prediction(G, predict, ebunch)
 
 
-# KeyFunc: only for directed network
+# KeyFunc: only for directed network ECCI
 def closure_similarity_index_two(G, dict_ce, ebunch=None):
 # dict_Ce: {v: [clo, src_clo, tgt_clo]}
     G_un = G.to_undirected()
