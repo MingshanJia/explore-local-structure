@@ -22,7 +22,26 @@ __all__ = ['random_guess',
            'cn_soundarajan_hopcroft',
            'ra_index_soundarajan_hopcroft',
            'within_inter_cluster',
-           'perform_link_prediction']
+           'perform_link_prediction',
+           'perform_link_prediction_undir']
+
+
+def perform_link_prediction_undir(G_old, G_new, method):
+    G_new = G_new.subgraph(G_old.nodes())
+    k = G_new.number_of_edges()    # number of links chosen from prediction, also number of links in ground truth
+    if k == 0:
+        return 1
+    else:
+        if method == 'cn':
+            pred_links = common_neighbor_index(G_old)[0 : k]
+        if method == 'cn-l3':
+            pred_links = common_neighbor_l3(G_old)[0 : k]
+
+        correct = 0
+        for e in pred_links:
+            if (e[0], e[1]) in G_new.edges():
+                correct += 1
+        return 100 * correct / k
 
 
 # KeyFunc: return prediction precision

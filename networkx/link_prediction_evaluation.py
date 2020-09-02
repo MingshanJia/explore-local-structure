@@ -1,7 +1,75 @@
 import random
 import networkx as nx
 
-__all__ = ['link_pred_app']
+__all__ = ['link_pred_app', 'undir_link_pred_app']
+
+
+def undir_link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
+    res = []
+    rg = 0  # random guess
+    cn = 0
+    cn_l3 = 0
+
+    e_all = list(G.edges(data=True))
+
+    if G.number_of_nodes() > 10000:
+        sample = True
+        sample_time = sample_time
+    else:
+        sample = False
+        sample_time = 1
+
+    print('sample time : %d' % sample_time)
+    print('repeat split time: %d' % repeat)
+    print('old edges percentage: %.1f' % old_pct)
+
+    for i in range(0, sample_time):
+        print('sample: %d' % i)
+
+        if sample:
+            random_edge = random.choice(e_all)
+            random_node = random_edge[0]
+            sample_nodes = get_sample_nodes(G, random_node, sample_size)
+            print("sampling done")
+            G_sampled = G.subgraph(sample_nodes)
+            e_sampled = list(G_sampled.edges(data=True))
+        else:
+            e_sampled = e_all
+
+        k = round(len(e_sampled) * old_pct)
+        print('k = %d' % k)
+
+        for n in range(0, repeat):
+            print('repeat = %d' % n)
+
+            if repeat == 1:
+                e_sampled = sorted(e_sampled, key=lambda t: t[2].get('sec'))  # for dataset with timestamp
+            else:
+                random.shuffle(e_sampled)
+
+            e_old = e_sampled[: k]
+            e_new = e_sampled[k:]
+            G_old = nx.DiGraph()
+            G_new = nx.DiGraph()
+            G_old.add_edges_from(e_old)
+            G_new.add_edges_from(e_new)
+
+            rg += nx.random_guess(G_old, G_new)
+            print('rg: %.3f' % (rg))
+            cn += nx.perform_link_prediction_undir(G_old, G_new, 'cn')
+            print('cn: %.3f' % (cn))
+            cn_l3 += nx.perform_link_prediction_undir(G_old, G_new, 'cn-l3')
+            print('cn-l3: %.3f' % (cn_l3))
+
+    rg /= (repeat * sample_time)
+    cn /= (repeat * sample_time)
+    cn_l3 /= (repeat * sample_time)
+
+    res.append(rg)
+    res.append(cn)
+    res.append(cn_l3)
+    return res
+
 
 
 # when nodes > 10K, sampling.
@@ -90,82 +158,6 @@ def link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
     return res
 
 
-# #not used
-# def link_pred_sample_app_2(G, repeat=1, sample_time=5, sample_size=1000, old_pct=0.5):
-#     print('old edges percentage: %.1f' % old_pct)
-#     print('repeat time: %d' % repeat)
-#     res = []
-#     rg = 0 #random guess
-#     cn = 0
-#     aa = 0
-#     ra = 0
-#     clo1 = 0
-#     clo2 = 0
-#     #dgr = 0
-#
-#     e_all = list(G.edges(data=True))
-#     k = round(len(e_all) * old_pct)
-#
-#     for n in range(0, repeat):
-#
-#         print('n = %d' % n)
-#
-#         if repeat == 1:
-#             e_all = sorted(e_all, key=lambda t: t[2].get('sec'))  # for dataset with timestamp
-#             print("sort done\n")
-#         else:
-#             random.shuffle(e_all)
-#
-#         e_old = e_all[: k]
-#         e_new = e_all[k:]
-#         G_old = nx.DiGraph()
-#         G_new = nx.DiGraph()
-#         G_old.add_edges_from(e_old)
-#         G_new.add_edges_from(e_new)
-#
-#         for i in range(0, sample_time):
-#             print('sample %d' % i)
-#
-#             random_edge = random.choice(e_old)
-#             random_node = random_edge[0]
-#
-#             sample_nodes = get_sample_nodes(G_old, random_node, sample_size)
-#             print("sampling done")
-#             G_old_sampled = G_old.subgraph(sample_nodes)
-#
-#             dict_ce = nx.closure(G_old_sampled)
-#
-#             rg += nx.random_guess(G_old_sampled, G_new)
-#             print('rg: %.3f' % (rg))
-#             cn += nx.perform_link_prediction(G_old_sampled, G_new, 'cn', dict_ce)
-#             print('cn: %.3f' % (cn))
-#             aa += nx.perform_link_prediction(G_old_sampled, G_new, 'aa', dict_ce)
-#             print('aa: %.3f' % (aa))
-#             ra += nx.perform_link_prediction(G_old_sampled, G_new, 'ra', dict_ce)
-#             print('ra: %.3f' % (ra))
-#             clo1 += nx.perform_link_prediction(G_old_sampled, G_new, 'clo1', dict_ce)
-#             print('clo1: %.3f' % (clo1))
-#             clo2 += nx.perform_link_prediction(G_old_sampled, G_new, 'clo2', dict_ce)
-#             print('clo2: %.3f' % (clo2))
-#             #dgr += nx.perform_link_prediction(G_old, G_new, 'dgr', dict_ce)
-#             #print('dgr: %.3f' % (dgr))
-#
-#     rg /= (repeat * sample_time)
-#     cn /= (repeat * sample_time)
-#     aa /= (repeat * sample_time)
-#     ra /= (repeat * sample_time)
-#     clo1 /= (repeat * sample_time)
-#     clo2 /= (repeat * sample_time)
-#     #dgr /= (repeat * sample_time)
-#
-#     res.append(rg)
-#     res.append(cn)
-#     res.append(aa)
-#     res.append(ra)
-#     res.append(clo1)
-#     res.append(clo2)
-#     #res.append(dgr)
-#     return res
 
 
 # get sample: connected nodes
