@@ -8,7 +8,10 @@ def undir_link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0
     res = []
     rg = 0  # random guess
     cn = 0
+    ra = 0
+    cn_clu = 0
     cn_l3 = 0
+    cn_l3_norm = 0
 
     e_all = list(G.edges(data=True))
 
@@ -49,25 +52,36 @@ def undir_link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0
 
             e_old = e_sampled[: k]
             e_new = e_sampled[k:]
-            G_old = nx.DiGraph()
-            G_new = nx.DiGraph()
+            G_old = nx.Graph()
+            G_new = nx.Graph()
             G_old.add_edges_from(e_old)
             G_new.add_edges_from(e_new)
 
             rg += nx.random_guess(G_old, G_new)
-            print('rg: %.3f' % (rg))
+            print('rg: %.3f' % rg)
             cn += nx.perform_link_prediction_undir(G_old, G_new, 'cn')
-            print('cn: %.3f' % (cn))
+            print('cn: %.3f' % cn)
+            ra += nx.perform_link_prediction_undir(G_old, G_new, 'ra')
+            print('ra: %.3f' % ra)
+            cn_clu += nx.perform_link_prediction_undir(G_old, G_new, 'cn+clu')
+            print('cn+clu: %.3f' % cn_clu)
             cn_l3 += nx.perform_link_prediction_undir(G_old, G_new, 'cn-l3')
-            print('cn-l3: %.3f' % (cn_l3))
+            print('cn-l3: %.3f' % cn_l3)
+            cn_l3_norm += nx.perform_link_prediction_undir(G_old, G_new, 'cn-l3-norm')
+            print('cn-l3-norm: %.3f' % cn_l3_norm)
 
     rg /= (repeat * sample_time)
     cn /= (repeat * sample_time)
+    ra /= (repeat * sample_time)
+    cn_clu /= (repeat * sample_time)
     cn_l3 /= (repeat * sample_time)
-
+    cn_l3_norm /= (repeat * sample_time)
     res.append(rg)
     res.append(cn)
+    res.append(ra)
+    res.append(cn_clu)
     res.append(cn_l3)
+    res.append(cn_l3_norm)
     return res
 
 

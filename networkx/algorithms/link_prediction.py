@@ -4,6 +4,7 @@ Link prediction algorithms.
 
 
 from math import log
+from math import sqrt
 
 import networkx as nx
 from networkx.utils import not_implemented_for
@@ -11,7 +12,9 @@ from networkx.utils import not_implemented_for
 
 __all__ = ['random_guess',
            'common_neighbor_index',
+           'common_neighbor_plus_clustering',
            'common_neighbor_l3',
+           'common_neighbor_l3_degree_normalized',
            'closure_similarity_index',
            'closure_similarity_index_two',
            'closure_similarity_index_three',
@@ -34,9 +37,14 @@ def perform_link_prediction_undir(G_old, G_new, method):
     else:
         if method == 'cn':
             pred_links = common_neighbor_index(G_old)[0 : k]
+        if method == 'ra':
+            pred_links = resource_allocation_index(G_old)[0 : k]
+        if method == 'cn+clu':
+            pred_links = common_neighbor_plus_clustering(G_old)[0 : k]
         if method == 'cn-l3':
             pred_links = common_neighbor_l3(G_old)[0 : k]
-
+        if method == 'cn-l3-norm':
+            pred_links = common_neighbor_l3_degree_normalized(G_old)[0 : k]
         correct = 0
         for e in pred_links:
             if (e[0], e[1]) in G_new.edges():
@@ -111,6 +119,14 @@ def common_neighbor_index(G, ebunch=None):
 
     return _apply_prediction(G, predict, ebunch)
 
+# newly added
+def common_neighbor_plus_clustering(G, ebunch=None):
+    def predict(G, u, v):
+        return sum(nx.clustering(G, w) for w in nx.common_neighbors(G, u, v))
+        # nbrs = list(nx.common_neighbors(G, u, v))
+        # return sum(nx.clustering(G, nbrs).values())
+    return _apply_prediction(G, predict, ebunch)
+
 
 # ChangeNote: newly added
 def common_neighbor_l3(G, ebunch=None):
@@ -125,6 +141,40 @@ def common_neighbor_l3(G, ebunch=None):
         return l3
 
     return _apply_prediction(G, predict, ebunch)
+
+
+# 2019 Network-based perdiction of protein interactions
+def common_neighbor_l3_degree_normalized(G, ebunch=None):
+
+    def predict(G, u, v):
+        l3 = 0
+        u_nbrs = set(G[u]) - {u}
+        v_nbrs = set(G[v]) - {v}
+        for x in u_nbrs:
+            x_nbrs = set(G[x]) - {x} - {u}
+            for y in x_nbrs & v_nbrs:
+                l3 += 1 / sqrt(G.degree(x) * G.degree(y))
+        return l3
+
+    return _apply_prediction(G, predict, ebunch)
+
+
+# too slow, obselete
+# def common_neighbor_l3_plus_oquad(G, ebunch=None):
+#
+#     def predict(G, u, v):
+#         l3 = 0
+#         u_nbrs = set(G[u]) - {u}
+#         v_nbrs = set(G[v]) - {v}
+#         for x in u_nbrs:
+#             x_nbrs = set(G[x]) - {x} - {u}
+#             l3 += len(x_nbrs & v_nbrs) * (nx.outer_quadrangle_coefficient(G, u) + nx.outer_quadrangle_coefficient(G, v))
+#             # for y in x_nbrs & v_nbrs:
+#             #     l3 += nx.inner_quadrangle_coefficient(G, x) + nx.inner_quadrangle_coefficient(G, y)
+#         return l3
+#
+#     return _apply_prediction(G, predict, ebunch)
+
 
 # KeyFunc: newly introduced CCI
 def closure_similarity_index(G, dict_ce, ebunch=None):
