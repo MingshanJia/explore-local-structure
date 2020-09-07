@@ -1,7 +1,99 @@
 import random
 import networkx as nx
+import numpy as np
+from operator import itemgetter
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import auc
+from sklearn.metrics import average_precision_score
+from sklearn.metrics import precision_recall_curve
 
-__all__ = ['link_pred_app', 'undir_link_pred_app']
+__all__ = ['link_predict_new_metrics', 'link_pred_app', 'undir_link_pred_app']
+
+# metrics: ROC-AUC, PR-AUC, Average Precision
+def link_predict_new_metrics(G, repeat = 10, old_pct = 0.8, method = 'cn'):
+    roc_auc = 0
+    pr_auc = 0
+    ave_precision = 0
+    all_edges = list(G.edges())
+    k = round(len(all_edges) * old_pct)
+    print("using {:f} % of edges to predict {:f} % edges".format(100 * old_pct, (100 * (1 - old_pct))))
+
+    if G.number_of_nodes() > 10000:
+        sample = True
+        sample_time = 10
+        print("sample 5K nodes for 10 times")
+    else:
+        sample = False
+        sample_time = 1
+        print("no sampling")
+
+    for i in range(0, sample_time):
+        if sample:
+            print('sample: %d' % i)
+            random_edge = random.choice(all_edges)
+            random_node = random_edge[0]
+            sample_nodes = get_sample_nodes(G, random_node, 5000)
+            print("sampling done")
+            G_sampled = G.subgraph(sample_nodes)
+            all_edges = list(G_sampled.edges(data=True))
+
+        for n in range(0, repeat):
+            G_old = nx.Graph()
+            G_new = nx.Graph()
+            print('repeat time = %d' % n)
+            random.shuffle(all_edges)
+            old_edges = all_edges[:k]
+            new_edges = all_edges[k:]
+            G_old.add_edges_from(old_edges)
+            G_new.add_edges_from(new_edges)
+            G_new = G_new.subgraph(G_old.nodes())
+
+            label_all, score_all = get_predicts_and_labels(G_old, G_new, method)
+            precision, recall, _ = precision_recall_curve(label_all, score_all)
+            roc_auc += roc_auc_score(label_all, score_all)
+            pr_auc += auc(recall, precision)
+            ave_precision += average_precision_score(label_all, score_all)
+
+    roc_auc /= (repeat * sample_time)
+    pr_auc /= (repeat * sample_time)
+    ave_precision /= (repeat * sample_time)
+    print("{} : ROC-AUC: {};\n    PR-AUC: {};\n    Ave_Precision: {}.".format(method, roc_auc, pr_auc, ave_precision))
+
+
+def get_predicts_and_labels(G_old, G_new, method):
+    predicts = get_predict_score(G_old, method)
+    pos_label = []
+    pos_score = []
+    neg_label = []
+    neg_score = []
+    for p in predicts:
+        if ((p[0], p[1]) in G_new.edges()):
+            pos_label.append(1)
+            pos_score.append(p[2])
+        else:
+            neg_label.append(0)
+            neg_score.append(p[2])
+
+    label_all = np.hstack([pos_label, neg_label])
+    score_all = np.hstack([pos_score, neg_score])
+    return label_all, score_all
+
+
+def get_predict_score(G_old, method):
+    if method == 'cn':
+        predicts = nx.common_neighbor_index(G_old)
+    if method == 'ra':
+        predicts = nx.resource_allocation_index(G_old)
+    if method == 'cn+clu':
+        predicts = nx.common_neighbor_plus_clustering(G_old)
+    if method == 'cn-l3':
+        predicts = nx.common_neighbor_l3(G_old)
+    if method == 'cn-l3-norm':
+        predicts = nx.common_neighbor_l3_degree_normalized(G_old)
+
+    max_score = max(predicts, key=itemgetter(2))[2]
+    normalized_predicts = [(i[0], i[1], i[2] / max_score) for i in predicts]
+    return normalized_predicts
 
 
 def undir_link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
@@ -196,174 +288,3 @@ def get_sample_nodes(G, random_node, sample_size):
         work_list = [n for n in res_list if n not in visited_list]
 
     return res_list[: sample_size]
-
-
-#for networks with timestamps
-#method = 'closure' or 'degree'
-#worse than pure degree! not meaningful to use..
-# def direction_pred_app(G, method = 'mixed', repeat = 100, old_pct=0.5 , b = 300):
-#
-#     e_all = list(G.edges(data=True))
-#     e_all = sorted(e_all, key=lambda t: t[2].get('sec'))    #for networks with timestamps
-#     k = round(len(e_all) * old_pct)
-#
-#     e_old = e_all[: k]
-#     e_new = e_all[k:]
-#     G_old = nx.DiGraph()
-#     G_old.add_edges_from(e_old)
-#
-#     avg_precision = 0
-#
-#     if len(e_new) > 25000:
-#         repeat = repeat
-#         sample = True
-#     else:
-#         repeat =1
-#         sample = False
-#
-#     for i in range(0, repeat):
-#         if sample:
-#             random.shuffle(e_new)
-#             e_new_sample = e_new[: 1000]
-#         else:
-#             e_new_sample = e_new
-#         e_target = get_e_possible_to_predict(e_new_sample, G_old)  # ground truth
-#         target_num_links = len(e_target)
-#         print("target number of links: %d" % target_num_links)
-#
-#         G_new = nx.DiGraph()
-#         G_new.add_edges_from(e_target)  # ground truth
-#         G_new_undirected = G_new.to_undirected()
-#
-#         if (method == 'closure'):
-#             dict_e_with_di_score = get_direction_score(G_new_undirected, G_old)
-#         if (method == 'degree'):
-#             dict_e_with_di_score = get_direction_score_two(G_new_undirected, G_old)
-#         if (method == 'mixed'):
-#             dict_e_with_di_score = get_direction_score_mixed(G_new_undirected, G_old, b)
-#
-#         dict_e_with_zero = {k:v for k,v in dict_e_with_di_score.items() if v[0]==0}   # dict containg edges with zero direction score
-#         ordered_list_of_zero_dict = [(k, v) for k, v in sorted(dict_e_with_zero.items(), key=lambda item: item[1][1], reverse=True)]  #sort according to L2R + R2L in descending order
-#         len_zero = len(ordered_list_of_zero_dict)
-#
-#         res_G_directed = nx.DiGraph()  # what to return
-#
-#         for k, v in dict_e_with_di_score.items():
-#             if v[0] > 0:
-#                 res_G_directed.add_edge(k[0], k[1])
-#             if v[0] < 0:
-#                 res_G_directed.add_edge(k[1], k[0])
-#         current_num_link = res_G_directed.number_of_edges()
-#
-#         index = 0
-#         while current_num_link < target_num_links and index < len_zero:
-#             e_key = ordered_list_of_zero_dict[index][0]
-#             res_G_directed.add_edge(e_key[0], e_key[1])
-#             current_num_link += 1
-#             if current_num_link == target_num_links:
-#                 break
-#             res_G_directed.add_edge(e_key[1], e_key[0])
-#             current_num_link += 1
-#             index += 1
-#
-#         if current_num_link < target_num_links:
-#             dict_abs_score = dict()  # used to sort, only contain edges with non_zero score
-#             for key in dict_e_with_di_score:
-#                 if dict_e_with_di_score[key][0] != 0:
-#                     dict_abs_score[key] = abs(dict_e_with_di_score[key][0])
-#
-#             ordered_list_of_abs_dict = [(k, v) for k, v in
-#                                         sorted(dict_abs_score.items(), key=lambda item: item[1])]  # in ascending order
-#
-#             length = len(ordered_list_of_abs_dict)
-#             index = 0  # initialised at the begining of list
-#
-#             while current_num_link < target_num_links and index < length:
-#                 e_key = ordered_list_of_abs_dict[index][0]
-#                 e_value = dict_e_with_di_score[e_key][0]
-#
-#                 if e_value > 0:
-#                     res_G_directed.add_edge(e_key[1], e_key[0])
-#                     current_num_link += 1
-#                 else:
-#                     res_G_directed.add_edge(e_key[0], e_key[1])
-#                     current_num_link += 1
-#                 index += 1
-#
-#         numerator = 0
-#         true_list_closure = []
-#         for e in res_G_directed.edges():
-#
-#             if res_G_directed.has_edge(e[0], e[1]) and G_new.has_edge(e[0], e[1]):
-#                 numerator += 1
-#                 true_list_closure.append(e)
-#         avg_precision += numerator / target_num_links
-#     return avg_precision / repeat
-#
-#
-# def get_e_possible_to_predict(e_new, G_old):
-#     e_possible_to_predict = []
-#     old_node_list = list(G_old.nodes())
-#
-#     for e in e_new:
-#         if (e[0] in old_node_list) and (e[1] in old_node_list):
-#             e_possible_to_predict.append(e)
-#     return e_possible_to_predict
-#
-#
-# #get direction score for interested edges, using src-clo and tgt-clo
-# def get_direction_score(G_new_sample, G_old):
-#     dict_e_with_di_score = dict()
-#
-#     dict_ce = nx.closure(G_old, G_new_sample.nodes())   #only for nodes exist in G_new
-#
-#     for e in G_new_sample.edges():
-#         left_src = dict_ce[e[0]][1]
-#         left_tgt = dict_ce[e[0]][2]
-#         right_src = dict_ce[e[1]][1]
-#         right_tgt = dict_ce[e[1]][2]
-#         L2R = left_src + right_tgt
-#         R2L = right_src + left_tgt
-#
-#         dict_e_with_di_score[e] = [L2R - R2L, L2R + R2L]
-#
-#     return dict_e_with_di_score
-#
-#
-#
-# #get direction score for interested edges, using out_degree and in_degree
-# def get_direction_score_two(G_new_sample, G_old):
-#     dict_e_with_di_score = dict()
-#
-#     for e in G_new_sample.edges():
-#         left_src = G_old.out_degree(e[0])
-#         left_tgt = G_old.in_degree(e[0])
-#         right_src = G_old.out_degree(e[1])
-#         right_tgt = G_old.in_degree(e[1])
-#         L2R = left_src + right_tgt
-#         R2L = right_src + left_tgt
-#
-#         dict_e_with_di_score[e] = [L2R - R2L, L2R + R2L]
-#
-#     return dict_e_with_di_score
-#
-#
-#
-# #get direction score for interested edges, using clo and degree
-# # b is a amplify coefficient for closure score
-# def get_direction_score_mixed(G_new_sample, G_old, b):
-#     dict_e_with_di_score = dict()
-#
-#     dict_ce = nx.closure(G_old, G_new_sample.nodes())   #only for nodes exist in G_new
-#
-#     for e in G_new_sample.edges():
-#         left_src = b * dict_ce[e[0]][1] + G_old.out_degree(e[0])
-#         left_tgt = b * dict_ce[e[0]][2] + G_old.in_degree(e[0])
-#         right_src = b * dict_ce[e[1]][1] + G_old.out_degree(e[1])
-#         right_tgt = b * dict_ce[e[1]][2] + G_old.in_degree(e[1])
-#         L2R = left_src + right_tgt
-#         R2L = right_src + left_tgt
-#
-#         dict_e_with_di_score[e] = [L2R - R2L, L2R + R2L]
-#
-#     return dict_e_with_di_score
