@@ -6,11 +6,64 @@ from sklearn.metrics import roc_auc_score
 from sklearn.metrics import auc
 from sklearn.metrics import average_precision_score
 from sklearn.metrics import precision_recall_curve
+from sklearn.linear_model import LogisticRegression
 
-__all__ = ['link_predict_new_metrics', 'link_pred_app', 'undir_link_pred_app']
+
+__all__ = ['link_predict_supervised_learning', 'link_predict_similarity_based', 'link_pred_app', 'undir_link_pred_app']
+
+
+def link_predict_supervised_learning(G, repeat = 10, old_pct = 0.7, method = 'log-reg', number_of_features = 2):
+    roc_auc = 0
+    pr_auc = 0
+    ave_precision = 0
+    all_edges = list(G.edges())
+    k = round(len(all_edges) * old_pct)
+    print("using {:f} % of edges to predict {:f} % edges".format(100 * old_pct, (100 * (1 - old_pct))))
+
+    if G.number_of_nodes() > 10000:
+        sample = True
+        sample_time = 10
+        print("sample 5K nodes for 10 times")
+    else:
+        sample = False
+        sample_time = 1
+        print("no sampling")
+
+    for i in range(0, sample_time):
+        if sample:
+            print('sample: %d' % i)
+            random_edge = random.choice(all_edges)
+            random_node = random_edge[0]
+            sample_nodes = get_sample_nodes(G, random_node, 5000)
+            print("sampling done")
+            G_sampled = G.subgraph(sample_nodes)
+            all_edges = list(G_sampled.edges(data=True))
+
+        for n in range(0, repeat):
+            G_old = nx.Graph()
+            G_new = nx.Graph()
+            print('repeat time = %d' % n)
+            random.shuffle(all_edges)
+            old_edges = all_edges[:k]
+            new_edges = all_edges[k:]
+            G_old.add_edges_from(old_edges)
+            G_new.add_edges_from(new_edges)
+            G_new = G_new.subgraph(G_old.nodes())
+
+            label_all, score_all = get_predicts_and_labels_supervised_learning(G_old, G_new, method, number_of_features)
+            precision, recall, _ = precision_recall_curve(label_all, score_all)
+            roc_auc += roc_auc_score(label_all, score_all)
+            pr_auc += auc(recall, precision)
+            ave_precision += average_precision_score(label_all, score_all)
+
+    roc_auc /= (repeat * sample_time)
+    pr_auc /= (repeat * sample_time)
+    ave_precision /= (repeat * sample_time)
+    print("{} :\nROC-AUC: {};\nPR-AUC: {};\nAve_Precision: {}.".format(method, roc_auc, pr_auc, ave_precision))
+
 
 # metrics: ROC-AUC, PR-AUC, Average Precision
-def link_predict_new_metrics(G, repeat = 10, old_pct = 0.8, method = 'cn'):
+def link_predict_similarity_based(G, repeat = 10, old_pct = 0.7, method = 'cn'):
     roc_auc = 0
     pr_auc = 0
     ave_precision = 0
@@ -60,6 +113,32 @@ def link_predict_new_metrics(G, repeat = 10, old_pct = 0.8, method = 'cn'):
     print("{} :\nROC-AUC: {};\nPR-AUC: {};\nAve_Precision: {}.".format(method, roc_auc, pr_auc, ave_precision))
 
 
+def get_predicts_and_labels_supervised_learning(G_old, G_new, method, number_of_features):
+    X, y = get_features_and_labels(G_old, G_new, number_of_features)
+    if method =='log-reg':
+        model = LogisticRegression()
+    model.fit(X, y)
+    score = model.predict_proba(X)
+    return y, score[:, 1]
+
+
+# two default features: cn, cn-l3
+def get_features_and_labels(G_old, G_new, number_of_features):
+    possible_links = list(nx.non_edges(G_old))
+    X = []
+    y = []
+    for u, v in possible_links:
+        cn_score = len(list(nx.common_neighbors(G_old, u, v)))
+        cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
+        if number_of_features == 2:
+            X.append([cn_score, cn_l3_score])
+        if (u, v) in G_new.edges():
+            y.append(1)
+        else:
+            y.append(0)
+    return X, y
+
+
 def get_predicts_and_labels(G_old, G_new, method):
     predicts = get_predict_score(G_old, method)
     pos_label = []
@@ -87,9 +166,9 @@ def get_predict_score(G_old, method):
     if method == 'cn+clu':
         predicts = nx.common_neighbor_plus_clustering(G_old)
     if method == 'cn-l3':
-        predicts = nx.common_neighbor_l3(G_old)
+        predicts = nx.common_neighbor_l3_index(G_old)
     if method == 'cn-l3-norm':
-        predicts = nx.common_neighbor_l3_degree_normalized(G_old)
+        predicts = nx.common_neighbor_l3_degree_normalized_index(G_old)
 
     max_score = max(predicts, key=itemgetter(2))[2]
     normalized_predicts = [(i[0], i[1], i[2] / max_score) for i in predicts]
