@@ -4,7 +4,6 @@ Link prediction algorithms.
 
 
 from math import log
-from math import sqrt
 
 import networkx as nx
 from networkx.utils import not_implemented_for
@@ -13,8 +12,8 @@ from networkx.utils import not_implemented_for
 __all__ = ['random_guess',
            'common_neighbor_index',
            'common_neighbor_plus_clustering',
-           'common_neighbor_l3',
-           'common_neighbor_l3_degree_normalized',
+           'common_neighbor_l3_index',
+           'common_neighbor_l3_degree_normalized_index',
            'closure_similarity_index',
            'closure_similarity_index_two',
            'closure_similarity_index_three',
@@ -42,9 +41,9 @@ def perform_link_prediction_undir(G_old, G_new, method):
         if method == 'cn+clu':
             pred_links = common_neighbor_plus_clustering(G_old)[0 : k]
         if method == 'cn-l3':
-            pred_links = common_neighbor_l3(G_old)[0 : k]
+            pred_links = common_neighbor_l3_index(G_old)[0 : k]
         if method == 'cn-l3-norm':
-            pred_links = common_neighbor_l3_degree_normalized(G_old)[0 : k]
+            pred_links = common_neighbor_l3_degree_normalized_index(G_old)[0 : k]
         correct = 0
         for e in pred_links:
             if (e[0], e[1]) in G_new.edges():
@@ -129,32 +128,19 @@ def common_neighbor_plus_clustering(G, ebunch=None):
 
 
 # ChangeNote: newly added
-def common_neighbor_l3(G, ebunch=None):
+def common_neighbor_l3_index(G, ebunch=None):
 
     def predict(G, u, v):
-        l3 = 0
-        u_nbrs = set(G[u]) - {u}
-        v_nbrs = set(G[v]) - {v}
-        for x in u_nbrs:
-            x_nbrs = set(G[x]) - {x} - {u}
-            l3 += len(x_nbrs & v_nbrs)
-        return l3
+        return nx.common_neighbors_l3(G, u, v)
 
     return _apply_prediction(G, predict, ebunch)
 
 
 # 2019 Network-based perdiction of protein interactions
-def common_neighbor_l3_degree_normalized(G, ebunch=None):
+def common_neighbor_l3_degree_normalized_index(G, ebunch=None):
 
     def predict(G, u, v):
-        l3 = 0
-        u_nbrs = set(G[u]) - {u}
-        v_nbrs = set(G[v]) - {v}
-        for x in u_nbrs:
-            x_nbrs = set(G[x]) - {x} - {u}
-            for y in x_nbrs & v_nbrs:
-                l3 += 1 / sqrt(G.degree(x) * G.degree(y))
-        return l3
+        return nx.common_neighbors_l3_degree_normalized(G, u, v)
 
     return _apply_prediction(G, predict, ebunch)
 

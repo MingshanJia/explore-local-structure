@@ -3,6 +3,7 @@
 
 from collections import Counter
 from itertools import chain
+from math import sqrt
 
 import networkx as nx
 from networkx.utils import pairwise, not_implemented_for
@@ -19,7 +20,8 @@ __all__ = ['nodes', 'edges', 'degree', 'degree_histogram', 'neighbors',
            'create_empty_copy', 'set_node_attributes',
            'get_node_attributes', 'set_edge_attributes',
            'get_edge_attributes', 'all_neighbors', 'non_neighbors',
-           'non_edges', 'common_neighbors', 'directed_common_neighbors','is_weighted',
+           'non_edges', 'common_neighbors', 'common_neighbors_l3', 'common_neighbors_l3_degree_normalized',
+           'directed_common_neighbors','is_weighted',
            'is_negatively_weighted', 'is_empty',
            'selfloop_edges', 'nodes_with_selfloops', 'number_of_selfloops',
            ]
@@ -928,6 +930,39 @@ def common_neighbors(G, u, v):
     # Return a generator explicitly instead of yielding so that the above
     # checks are executed eagerly.
     return (w for w in G[u] if w in G[v] and w not in (u, v))
+
+
+@not_implemented_for('directed')
+def common_neighbors_l3(G, u, v):
+
+    if u not in G:
+        raise nx.NetworkXError('u is not in the graph.')
+    if v not in G:
+        raise nx.NetworkXError('v is not in the graph.')
+    l3 = 0
+    u_nbrs = set(G[u]) - {u}
+    v_nbrs = set(G[v]) - {v}
+    for x in u_nbrs:
+        x_nbrs = set(G[x]) - {x} - {u}
+        l3 += len(x_nbrs & v_nbrs)
+    return l3
+
+
+@not_implemented_for('directed')
+def common_neighbors_l3_degree_normalized(G, u, v):
+
+    if u not in G:
+        raise nx.NetworkXError('u is not in the graph.')
+    if v not in G:
+        raise nx.NetworkXError('v is not in the graph.')
+    l3 = 0
+    u_nbrs = set(G[u]) - {u}
+    v_nbrs = set(G[v]) - {v}
+    for x in u_nbrs:
+        x_nbrs = set(G[x]) - {x} - {u}
+        for y in x_nbrs & v_nbrs:
+            l3 += 1 / sqrt(G.degree(x) * G.degree(y))
+    return l3
 
 
 # @ChangeNote

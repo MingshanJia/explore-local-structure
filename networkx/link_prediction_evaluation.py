@@ -57,7 +57,7 @@ def link_predict_new_metrics(G, repeat = 10, old_pct = 0.8, method = 'cn'):
     roc_auc /= (repeat * sample_time)
     pr_auc /= (repeat * sample_time)
     ave_precision /= (repeat * sample_time)
-    print("{} : ROC-AUC: {};\n    PR-AUC: {};\n    Ave_Precision: {}.".format(method, roc_auc, pr_auc, ave_precision))
+    print("{} :\nROC-AUC: {};\nPR-AUC: {};\nAve_Precision: {}.".format(method, roc_auc, pr_auc, ave_precision))
 
 
 def get_predicts_and_labels(G_old, G_new, method):
