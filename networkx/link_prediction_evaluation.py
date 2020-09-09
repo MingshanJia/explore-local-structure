@@ -7,6 +7,8 @@ from sklearn.metrics import auc
 from sklearn.metrics import average_precision_score
 from sklearn.metrics import precision_recall_curve
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn import svm
 
 
 __all__ = ['link_predict_supervised_learning', 'link_predict_similarity_based', 'link_pred_app', 'undir_link_pred_app']
@@ -117,12 +119,18 @@ def get_predicts_and_labels_supervised_learning(G_old, G_new, method, number_of_
     X, y = get_features_and_labels(G_old, G_new, number_of_features)
     if method =='log-reg':
         model = LogisticRegression()
+    if method == 'tree':
+        model = DecisionTreeClassifier()
+    if method == 'svm':
+        model = svm.SVC(probability=True)
     model.fit(X, y)
     score = model.predict_proba(X)
     return y, score[:, 1]
 
 
 # two default features: cn, cn-l3
+# four features + clustering coef. and closure coef.
+# six features + iquad features and oquad coef.
 def get_features_and_labels(G_old, G_new, number_of_features):
     possible_links = list(nx.non_edges(G_old))
     X = []
@@ -132,6 +140,20 @@ def get_features_and_labels(G_old, G_new, number_of_features):
         cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
         if number_of_features == 2:
             X.append([cn_score, cn_l3_score])
+        if number_of_features == 3:
+            clu_score = nx.clustering(G_old, u) + nx.clustering(G_old, v)
+            X.append([cn_score, cn_l3_score, clu_score])
+        if number_of_features == 4:
+            clu_score = nx.clustering(G_old, u) + nx.clustering(G_old, v)
+            clo_score = nx.closure(G_old, u)[0] + nx.closure(G_old, v)[0]
+            X.append([cn_score, cn_l3_score, clu_score, clo_score])
+        if number_of_features == 6:
+            clu_score = nx.clustering(G_old, u) + nx.clustering(G_old, v)
+            clo_score = nx.closure(G_old, u)[0] + nx.closure(G_old, v)[0]
+            iquad_score = nx.inner_quadrangle_coefficient(G_old, u) + nx.inner_quadrangle_coefficient(G_old, v)
+            oquad_score = nx.outer_quadrangle_coefficient(G_old, u) + nx.outer_quadrangle_coefficient(G_old, v)
+            X.append([cn_score, cn_l3_score, clu_score, clo_score, iquad_score, oquad_score])
+
         if (u, v) in G_new.edges():
             y.append(1)
         else:
@@ -141,20 +163,14 @@ def get_features_and_labels(G_old, G_new, number_of_features):
 
 def get_predicts_and_labels(G_old, G_new, method):
     predicts = get_predict_score(G_old, method)
-    pos_label = []
-    pos_score = []
-    neg_label = []
-    neg_score = []
+    label_all = []
+    score_all = []
     for p in predicts:
-        if ((p[0], p[1]) in G_new.edges()):
-            pos_label.append(1)
-            pos_score.append(p[2])
+        score_all.append(p[2])
+        if (p[0], p[1]) in G_new.edges():
+            label_all.append(1)
         else:
-            neg_label.append(0)
-            neg_score.append(p[2])
-
-    label_all = np.hstack([pos_label, neg_label])
-    score_all = np.hstack([pos_score, neg_score])
+            label_all.append(0)
     return label_all, score_all
 
 
