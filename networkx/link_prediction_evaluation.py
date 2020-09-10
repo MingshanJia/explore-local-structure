@@ -135,23 +135,25 @@ def get_features_and_labels(G_old, G_new, number_of_features):
     possible_links = list(nx.non_edges(G_old))
     X = []
     y = []
+    clu_clo_dict = nx.clustering_closure_coefs(G_old)   # can be moved into parameters
+    iquad_oquad_dict = nx.iquad_oquad_coefs(G_old)      # can be moved into parameters
     for u, v in possible_links:
         cn_score = len(list(nx.common_neighbors(G_old, u, v)))
         cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
         if number_of_features == 2:
             X.append([cn_score, cn_l3_score])
         if number_of_features == 3:
-            clu_score = nx.clustering(G_old, u) + nx.clustering(G_old, v)
+            clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
             X.append([cn_score, cn_l3_score, clu_score])
         if number_of_features == 4:
-            clu_score = nx.clustering(G_old, u) + nx.clustering(G_old, v)
-            clo_score = nx.closure(G_old, u)[0] + nx.closure(G_old, v)[0]
+            clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
+            clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
             X.append([cn_score, cn_l3_score, clu_score, clo_score])
         if number_of_features == 6:
-            clu_score = nx.clustering(G_old, u) + nx.clustering(G_old, v)
-            clo_score = nx.closure(G_old, u)[0] + nx.closure(G_old, v)[0]
-            iquad_score = nx.inner_quadrangle_coefficient(G_old, u) + nx.inner_quadrangle_coefficient(G_old, v)
-            oquad_score = nx.outer_quadrangle_coefficient(G_old, u) + nx.outer_quadrangle_coefficient(G_old, v)
+            clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
+            clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
+            iquad_score = iquad_oquad_dict[u][0] + iquad_oquad_dict[v][0]
+            oquad_score = iquad_oquad_dict[u][1] + iquad_oquad_dict[v][1]
             X.append([cn_score, cn_l3_score, clu_score, clo_score, iquad_score, oquad_score])
 
         if (u, v) in G_new.edges():
