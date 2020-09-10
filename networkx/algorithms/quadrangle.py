@@ -7,10 +7,9 @@ from networkx.utils import not_implemented_for
 
 __all__ = ['quadrangle_coefficient_iter', 'global_quadrangle', 'number_of_quadrangles',
            'square_clustering', 'quadrangle_coefficient', 'inner_quadrangle_coefficient','outer_quadrangle_coefficient',
-           'quad_iquad_oquad', 'average_inner_quad_co', 'average_outer_quad_co']
+           'iquad_oquad_coefs','quad_iquad_oquad', 'average_inner_quad_co', 'average_outer_quad_co']
 
 
-#TODO: caculate the two simultaneously
 # **************************************************************************** Quadrangle Coefficient ************************************************************
 # for calculating inner-quad-co and outer-quad-co
 def quadrangle_coefficient_iter(G, nodes=None):
@@ -47,6 +46,16 @@ def quad_iquad_oquad(G, nodes=None):
 
     qc_iter = quadrangle_coefficient_iter(G, nodes)
     res = {v: [q, iq, oq]  for v, q, iq, oq in qc_iter}
+    if nodes in G:
+        return res[nodes]
+    return res
+
+
+# calculate iquad and oquad at the same time
+def iquad_oquad_coefs(G, nodes=None):
+
+    qc_iter = quadrangle_coefficient_iter(G, nodes)
+    res = {v: [0, 0] if q == 0 else [q / iq, q / oq] for v, q, iq, oq in qc_iter}
     if nodes in G:
         return res[nodes]
     return res

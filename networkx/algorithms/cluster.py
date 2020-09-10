@@ -8,7 +8,7 @@ import networkx as nx
 from networkx.utils import not_implemented_for
 
 __all__ = ['triangles', 'number_of_triangles', 'average_clustering', 'clustering', 'transitivity', 'triangles_and_otc',
-           'triangles_and_ote', 'global_clustering', 'generalized_degree', 'average_closure', 'closure',
+           'triangles_and_ote', 'global_clustering', 'generalized_degree', 'average_closure', 'closure', 'clustering_closure_coefs',
            'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure']
 
 
@@ -94,6 +94,44 @@ def _triangles_and_opentriads_iter(G, nodes=None):
             tri += len(vs & ns)
 
         yield (v, tri, ot)
+
+
+@not_implemented_for('multigraph')
+def _triangles_and_otc_ote_iter(G, nodes=None):
+
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    for v, v_nbrs in nodes_nbrs:
+        vs = set(v_nbrs) - {v}
+        ote = 0
+        tri = 0
+        for w in vs:
+            ns = set(G[w]) - {w}
+            ote += len(ns) - 1
+            tri += len(vs & ns)
+
+        yield (v, tri, len(vs), ote)
+
+
+# calculate clustering and closure coefs at the same time
+def clustering_closure_coefs(G, nodes=None, weight=None):
+    if G.is_directed():
+        pass
+    else:
+        if weight is not None:
+            pass
+        else:
+            td_iter = _triangles_and_otc_ote_iter(G, nodes)
+            cluclo = {v: [0, 0] if t == 0 else [t / (d * (d-1)), t / ote] for
+                        v, t, d, ote in td_iter}
+    if nodes in G:
+        # Return the value of the sole entry in the dictionary.
+        return cluclo[nodes]
+    return cluclo
+
 
 
 # @not_implemented_for('multigraph')
