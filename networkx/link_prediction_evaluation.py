@@ -11,107 +11,29 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn import svm
 
 
-__all__ = ['link_predict_supervised_learning', 'link_predict_similarity_based', 'link_pred_app', 'undir_link_pred_app']
+__all__ = ['link_predict_supervised_learning', 'get_dataset',
+           'link_predict_similarity_based', 'undir_link_pred_app', 'link_pred_app', ]
+
+# usage: 1. train_set = nx.get_train_set(G)    2. nx.link_predict_supervised_learning(train_set)
 
 
-def link_predict_supervised_learning(G, repeat = 10, old_pct = 0.7, method = 'log-reg', number_of_features = 2):
+#APP 1
+#TODO: add progress bar
+def link_predict_supervised_learning(train_set, method='log-reg', number_of_features=2):
     roc_auc = 0
     pr_auc = 0
     ave_precision = 0
-    all_edges = list(G.edges())
-    k = round(len(all_edges) * old_pct)
-    print("using {:f} % of edges to predict {:f} % edges".format(100 * old_pct, (100 * (1 - old_pct))))
+    n = len(train_set)
+    for g in train_set:
+        label_all, score_all = get_predicts_and_labels_supervised_learning(g[0], g[1],  method, number_of_features)
+        precision, recall, _ = precision_recall_curve(label_all, score_all)
+        pr_auc += auc(recall, precision)
+        roc_auc += roc_auc_score(label_all, score_all)
+        ave_precision += average_precision_score(label_all, score_all)
 
-    if G.number_of_nodes() > 10000:
-        sample = True
-        sample_time = 10
-        print("sample 5K nodes for 10 times")
-    else:
-        sample = False
-        sample_time = 1
-        print("no sampling")
-
-    for i in range(0, sample_time):
-        if sample:
-            print('sample: %d' % i)
-            random_edge = random.choice(all_edges)
-            random_node = random_edge[0]
-            sample_nodes = get_sample_nodes(G, random_node, 5000)
-            print("sampling done")
-            G_sampled = G.subgraph(sample_nodes)
-            all_edges = list(G_sampled.edges(data=True))
-
-        for n in range(0, repeat):
-            G_old = nx.Graph()
-            G_new = nx.Graph()
-            print('repeat time = %d' % n)
-            random.shuffle(all_edges)
-            old_edges = all_edges[:k]
-            new_edges = all_edges[k:]
-            G_old.add_edges_from(old_edges)
-            G_new.add_edges_from(new_edges)
-            G_new = G_new.subgraph(G_old.nodes())
-
-            label_all, score_all = get_predicts_and_labels_supervised_learning(G_old, G_new, method, number_of_features)
-            precision, recall, _ = precision_recall_curve(label_all, score_all)
-            roc_auc += roc_auc_score(label_all, score_all)
-            pr_auc += auc(recall, precision)
-            ave_precision += average_precision_score(label_all, score_all)
-
-    roc_auc /= (repeat * sample_time)
-    pr_auc /= (repeat * sample_time)
-    ave_precision /= (repeat * sample_time)
-    print("{} :\nROC-AUC: {};\nPR-AUC: {};\nAve_Precision: {}.".format(method, roc_auc, pr_auc, ave_precision))
-
-
-# metrics: ROC-AUC, PR-AUC, Average Precision
-def link_predict_similarity_based(G, repeat = 10, old_pct = 0.7, method = 'cn'):
-    roc_auc = 0
-    pr_auc = 0
-    ave_precision = 0
-    all_edges = list(G.edges())
-    k = round(len(all_edges) * old_pct)
-    print("using {:f} % of edges to predict {:f} % edges".format(100 * old_pct, (100 * (1 - old_pct))))
-
-    if G.number_of_nodes() > 10000:
-        sample = True
-        sample_time = 10
-        print("sample 5K nodes for 10 times")
-    else:
-        sample = False
-        sample_time = 1
-        print("no sampling")
-
-    for i in range(0, sample_time):
-        if sample:
-            print('sample: %d' % i)
-            random_edge = random.choice(all_edges)
-            random_node = random_edge[0]
-            sample_nodes = get_sample_nodes(G, random_node, 5000)
-            print("sampling done")
-            G_sampled = G.subgraph(sample_nodes)
-            all_edges = list(G_sampled.edges(data=True))
-
-        for n in range(0, repeat):
-            G_old = nx.Graph()
-            G_new = nx.Graph()
-            print('repeat time = %d' % n)
-            random.shuffle(all_edges)
-            old_edges = all_edges[:k]
-            new_edges = all_edges[k:]
-            G_old.add_edges_from(old_edges)
-            G_new.add_edges_from(new_edges)
-            G_new = G_new.subgraph(G_old.nodes())
-
-            label_all, score_all = get_predicts_and_labels(G_old, G_new, method)
-            precision, recall, _ = precision_recall_curve(label_all, score_all)
-            roc_auc += roc_auc_score(label_all, score_all)
-            pr_auc += auc(recall, precision)
-            ave_precision += average_precision_score(label_all, score_all)
-
-    roc_auc /= (repeat * sample_time)
-    pr_auc /= (repeat * sample_time)
-    ave_precision /= (repeat * sample_time)
+    roc_auc /= n
+    pr_auc /= n
+    ave_precision /= n
     print("{} :\nROC-AUC: {};\nPR-AUC: {};\nAve_Precision: {}.".format(method, roc_auc, pr_auc, ave_precision))
 
 
@@ -131,6 +53,7 @@ def get_predicts_and_labels_supervised_learning(G_old, G_new, method, number_of_
 # two default features: cn, cn-l3
 # four features + clustering coef. and closure coef.
 # six features + iquad features and oquad coef.
+#TODO: calculate all 3 combinations
 def get_features_and_labels(G_old, G_new, number_of_features):
     possible_links = list(nx.non_edges(G_old))
     X = []
@@ -163,6 +86,62 @@ def get_features_and_labels(G_old, G_new, number_of_features):
     return X, y
 
 
+def get_dataset(G, repeat = 10, old_pct = 0.7):
+    dataset = []
+    all_edges = list(G.edges())
+    k = round(len(all_edges) * old_pct)
+    print("using {:f} % of edges to predict {:f} % edges".format(100 * old_pct, (100 * (1 - old_pct))))
+
+    if G.number_of_nodes() > 10000:
+        sample = True
+        sample_time = 10
+        print("sample 5K nodes for 10 times")
+    else:
+        sample = False
+        sample_time = 1
+        print("no sampling")
+
+    for i in range(0, sample_time):
+        if sample:
+            random_edge = random.choice(all_edges)
+            random_node = random_edge[0]
+            sample_nodes = get_sample_nodes(G, random_node, 5000)
+            G_sampled = G.subgraph(sample_nodes)
+            all_edges = list(G_sampled.edges(data=True))
+
+        for n in range(0, repeat):
+            G_old = nx.Graph()
+            G_new = nx.Graph()
+            random.shuffle(all_edges)
+            old_edges = all_edges[:k]
+            new_edges = all_edges[k:]
+            G_old.add_edges_from(old_edges)
+            G_new.add_edges_from(new_edges)
+            G_new = G_new.subgraph(G_old.nodes())
+            dataset.append([G_old, G_new])
+    print("Number of dataset: {}".format(sample_time * repeat))
+    return dataset
+
+
+# APP2: metrics: ROC-AUC, PR-AUC, Average Precision
+def link_predict_similarity_based(dataset, method = 'cn'):
+    roc_auc = 0
+    pr_auc = 0
+    ave_precision = 0
+    n = len(dataset)
+    for g in dataset:
+        label_all, score_all = get_predicts_and_labels(g[0], g[1], method)
+        precision, recall, _ = precision_recall_curve(label_all, score_all)
+        roc_auc += roc_auc_score(label_all, score_all)
+        pr_auc += auc(recall, precision)
+        ave_precision += average_precision_score(label_all, score_all)
+
+    roc_auc /= n
+    pr_auc /= n
+    ave_precision /= n
+    print("{} :\nROC-AUC: {};\nPR-AUC: {};\nAve_Precision: {}.".format(method, roc_auc, pr_auc, ave_precision))
+
+
 def get_predicts_and_labels(G_old, G_new, method):
     predicts = get_predict_score(G_old, method)
     label_all = []
@@ -193,6 +172,7 @@ def get_predict_score(G_old, method):
     return normalized_predicts
 
 
+#obselete APP3: using precision
 def undir_link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
     res = []
     rg = 0  # random guess
