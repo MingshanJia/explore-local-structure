@@ -1,6 +1,7 @@
 import random
 import networkx as nx
 import numpy as np
+from tqdm import tqdm
 from operator import itemgetter
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import auc
@@ -13,7 +14,6 @@ from sklearn import svm
 
 __all__ = ['link_predict_supervised_learning', 'get_dataset',
            'link_predict_similarity_based', 'undir_link_pred_app', 'link_pred_app', ]
-
 # usage: 1. train_set = nx.get_train_set(G)    2. nx.link_predict_supervised_learning(train_set)
 
 
@@ -24,7 +24,7 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
     pr_auc = 0
     ave_precision = 0
     n = len(train_set)
-    for g in train_set:
+    for g in tqdm(train_set):
         label_all, score_all = get_predicts_and_labels_supervised_learning(g[0], g[1],  method, number_of_features)
         precision, recall, _ = precision_recall_curve(label_all, score_all)
         pr_auc += auc(recall, precision)
@@ -53,36 +53,46 @@ def get_predicts_and_labels_supervised_learning(G_old, G_new, method, number_of_
 # two default features: cn, cn-l3
 # four features + clustering coef. and closure coef.
 # six features + iquad features and oquad coef.
-#TODO: calculate all 3 combinations
 def get_features_and_labels(G_old, G_new, number_of_features):
     possible_links = list(nx.non_edges(G_old))
     X = []
     y = []
-    clu_clo_dict = nx.clustering_closure_coefs(G_old)   # can be moved into parameters
-    iquad_oquad_dict = nx.iquad_oquad_coefs(G_old)      # can be moved into parameters
-    for u, v in possible_links:
-        cn_score = len(list(nx.common_neighbors(G_old, u, v)))
-        cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
-        if number_of_features == 2:
+    if number_of_features == 2:
+        for u, v in possible_links:
+            cn_score = len(list(nx.common_neighbors(G_old, u, v)))
+            cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
             X.append([cn_score, cn_l3_score])
-        if number_of_features == 3:
-            clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
-            X.append([cn_score, cn_l3_score, clu_score])
-        if number_of_features == 4:
+            if (u, v) in G_new.edges():
+                y.append(1)
+            else:
+                y.append(0)
+    if number_of_features == 4:
+        clu_clo_dict = nx.clustering_closure_coefs(G_old)
+        for u, v in possible_links:
+            cn_score = len(list(nx.common_neighbors(G_old, u, v)))
+            cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
             clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
             clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
             X.append([cn_score, cn_l3_score, clu_score, clo_score])
-        if number_of_features == 6:
+            if (u, v) in G_new.edges():
+                y.append(1)
+            else:
+                y.append(0)
+    if number_of_features == 6:
+        clu_clo_dict = nx.clustering_closure_coefs(G_old)
+        iquad_oquad_dict = nx.iquad_oquad_coefs(G_old)
+        for u, v in possible_links:
+            cn_score = len(list(nx.common_neighbors(G_old, u, v)))
+            cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
             clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
             clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
             iquad_score = iquad_oquad_dict[u][0] + iquad_oquad_dict[v][0]
             oquad_score = iquad_oquad_dict[u][1] + iquad_oquad_dict[v][1]
             X.append([cn_score, cn_l3_score, clu_score, clo_score, iquad_score, oquad_score])
-
-        if (u, v) in G_new.edges():
-            y.append(1)
-        else:
-            y.append(0)
+            if (u, v) in G_new.edges():
+                y.append(1)
+            else:
+                y.append(0)
     return X, y
 
 
