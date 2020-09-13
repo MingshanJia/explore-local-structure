@@ -1,6 +1,7 @@
 import random
 import networkx as nx
 import numpy as np
+import matplotlib.pyplot as plt
 from tqdm import tqdm
 from operator import itemgetter
 from sklearn.metrics import roc_auc_score
@@ -9,8 +10,9 @@ from sklearn.metrics import average_precision_score
 from sklearn.metrics import precision_recall_curve
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm
-
+from xgboost import XGBClassifier
 
 __all__ = ['link_predict_supervised_learning', 'get_dataset',
            'link_predict_similarity_based', 'undir_link_pred_app', 'link_pred_app', ]
@@ -18,36 +20,66 @@ __all__ = ['link_predict_supervised_learning', 'get_dataset',
 
 
 #APP 1
-#TODO: add progress bar
 def link_predict_supervised_learning(train_set, method='log-reg', number_of_features=2):
     roc_auc = 0
     pr_auc = 0
     ave_precision = 0
+    feature_importance = np.zeros(number_of_features)
     n = len(train_set)
     for g in tqdm(train_set):
-        label_all, score_all = get_predicts_and_labels_supervised_learning(g[0], g[1],  method, number_of_features)
+        label_all, score_all, feature_importance_of_g = get_predicts_labels_and_feature_importance(g[0], g[1],  method, number_of_features)
         precision, recall, _ = precision_recall_curve(label_all, score_all)
         pr_auc += auc(recall, precision)
         roc_auc += roc_auc_score(label_all, score_all)
         ave_precision += average_precision_score(label_all, score_all)
-
+        feature_importance += feature_importance_of_g
     roc_auc /= n
     pr_auc /= n
     ave_precision /= n
+    feature_importance /= n
     print("{} :\nROC-AUC: {};\nPR-AUC: {};\nAve_Precision: {}.".format(method, roc_auc, pr_auc, ave_precision))
 
+    if number_of_features == 2:
+        features = ['cn', 'cn-l3']
+    if number_of_features == 4:
+        features = ['cn', 'cn-l3', 'clustering', 'clo']
+    if number_of_features == 6:
+        features = ['cn', 'cn-l3', 'clustering', 'clo', 'i-quad', 'oquad']
+    plt.bar(features, feature_importance)
+    plt.show()
+    for feature, score in zip(features, feature_importance):
+        print(feature, score)
+    return roc_auc, pr_auc, ave_precision, feature_importance
 
-def get_predicts_and_labels_supervised_learning(G_old, G_new, method, number_of_features):
+
+
+def get_predicts_labels_and_feature_importance(G_old, G_new, method, number_of_features):
     X, y = get_features_and_labels(G_old, G_new, number_of_features)
     if method =='log-reg':
         model = LogisticRegression()
+        model.fit(X, y)
+        importances = model.coef_[0]
     if method == 'tree':
         model = DecisionTreeClassifier()
+        model.fit(X, y)
+        importances = model.feature_importances_
+    if method == 'forest':
+        model = RandomForestClassifier()
+        model.fit(X, y)
+        importances = model.feature_importances_
+    #TODO: add importances for svm
     if method == 'svm':
         model = svm.SVC(probability=True)
-    model.fit(X, y)
+        model.fit(X, y)
+        importances = model.coef_
+    if method == 'xgboost':
+        model = XGBClassifier()
+        X = np.asarray(X)
+        model.fit(X, y)
+        importances = model.feature_importances_
+
     score = model.predict_proba(X)
-    return y, score[:, 1]
+    return y, score[:, 1], importances
 
 
 # two default features: cn, cn-l3
@@ -139,7 +171,7 @@ def link_predict_similarity_based(dataset, method = 'cn'):
     pr_auc = 0
     ave_precision = 0
     n = len(dataset)
-    for g in dataset:
+    for g in tqdm(dataset):
         label_all, score_all = get_predicts_and_labels(g[0], g[1], method)
         precision, recall, _ = precision_recall_curve(label_all, score_all)
         roc_auc += roc_auc_score(label_all, score_all)
