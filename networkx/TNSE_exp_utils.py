@@ -2,7 +2,7 @@ import networkx as nx
 
 __all__ = ['degree_coefs_corr', 'get_four_coefs', 'closeness_coefs_corr']
 
-
+#TODO: finish this
 def get_network_info(G, weight = None):
     n = G.number_of_nodes()
     m = G.number_of_edges()

@@ -96,7 +96,6 @@ def _triangles_and_opentriads_iter(G, nodes=None):
         yield (v, tri, ot)
 
 
-#TODO: debug
 @not_implemented_for('multigraph')
 def _weighted_triangles_and_opentriads_iter(G, nodes=None, weight='weight'):
 
