@@ -2,6 +2,18 @@ import networkx as nx
 
 __all__ = ['degree_coefs_corr', 'get_four_coefs', 'closeness_coefs_corr']
 
+
+def get_network_info(G, weight = None):
+    n = G.number_of_nodes()
+    m = G.number_of_edges()
+    k = m / n
+    cc = nx.average_clustering(G, weight)
+    ce = nx.average_closure(G, weight)
+
+    res = [n, m, k, cc, ce]
+    return res
+
+
 # if the last chunk is less than bin width, add it to the second to last bin
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""

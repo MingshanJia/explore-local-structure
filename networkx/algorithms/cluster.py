@@ -96,6 +96,35 @@ def _triangles_and_opentriads_iter(G, nodes=None):
         yield (v, tri, ot)
 
 
+#TODO: debug
+@not_implemented_for('multigraph')
+def _weighted_triangles_and_opentriads_iter(G, nodes=None, weight='weight'):
+
+    if weight is None or G.number_of_edges() == 0:
+        max_weight = 1
+    else:
+        max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
+
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    def wt(u, v):
+        return G[u][v].get(weight, 1) / max_weight
+
+    for i, inbrs in nodes_nbrs:
+        inbrs = set(inbrs) - {i}
+        weighted_triangles = 0
+        weighted_end_opentriads = 0
+        for j in inbrs:
+            jnbrs = set(G[j]) - {j}
+            weighted_triangles += sum((wt(i, j) * wt(j, k) * wt(k, i))
+                                      for k in inbrs & jnbrs)
+            weighted_end_opentriads += sum(wt(i, j) * wt(j, k) for k in (jnbrs- {i}))
+        yield (i, weighted_triangles, weighted_end_opentriads)
+
+
 @not_implemented_for('multigraph')
 def _triangles_and_otc_ote_iter(G, nodes=None):
 
@@ -610,8 +639,8 @@ def _directed_weighted_triangles_and_otc_iter(G, nodes=None, weight='weight'):
         yield (i, directed_triangles, directed_center_opentriads)
 
 
-
 # for clo-co
+# TODO: debug :degree needs to be normalise
 @not_implemented_for('multigraph')
 def _directed_weighted_triangles_and_opentriads_iter(G, nodes=None, weight='weight'):
     """ Return an iterator of
@@ -748,10 +777,9 @@ def closure(G, nodes=None, weight=None):
     # undirected:
     else:
         if weight is not None:
-            pass
-            # td_iter = _weighted_triangles_and_degree_iter(G, nodes, weight)
-            # clusterc = {v: 0 if t == 0 else t / (d * (d - 1)) for
-            #             v, d, t in td_iter}
+            td_iter = _weighted_triangles_and_opentriads_iter(G, nodes, weight)
+            closurec = {v: [0] if t == 0 else [t / ot] for
+                         v, t, ot in td_iter}
         else:
             td_iter = _triangles_and_opentriads_iter(G, nodes)
             closurec = {v: [0] if t == 0 else [t / ot] for
