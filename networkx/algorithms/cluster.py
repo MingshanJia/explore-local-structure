@@ -639,7 +639,6 @@ def _directed_weighted_triangles_and_otc_iter(G, nodes=None, weight='weight'):
 
 
 # for clo-co
-# TODO: debug :degree needs to be normalise
 @not_implemented_for('multigraph')
 def _directed_weighted_triangles_and_opentriads_iter(G, nodes=None, weight='weight'):
     """ Return an iterator of

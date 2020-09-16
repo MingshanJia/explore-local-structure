@@ -1,7 +1,7 @@
 import networkx as nx
 import pandas as pd
 
-__all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_cc_ce_df']
+__all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_network_info', 'get_cc_ce_df']
 
 
 def get_key_info(G, weight = None):
@@ -9,12 +9,24 @@ def get_key_info(G, weight = None):
     m = G.number_of_edges()
     k = m / n
     r = nx.overall_reciprocity(G)
-    cc = nx.average_clustering(G, weight)
-    ce = nx.average_closure(G, weight)
+    cc = nx.average_clustering(G, weight=weight)
+    ce = nx.average_closure(G, weight=weight)
 
     res = [n, m, k, r, cc, ce]
     return res
 
+
+# get four coefs.
+def get_network_info(G, weight=None):
+    n = G.number_of_nodes()
+    m = G.number_of_edges()
+    k = m / n
+    cc = nx.average_clustering(G, weight=weight)
+    ce = nx.average_closure(G, weight=weight)
+    iquad, oquad = nx.average_inner_and_outer_quad_co(G, weight=weight)
+
+    res = [n, m, k, cc, ce, iquad, oquad]
+    return res
 
 
 def average_normalized_patterns_app(G, nodes = None):
@@ -28,7 +40,6 @@ def average_normalized_patterns_app(G, nodes = None):
     for (key, h, m, e, c) in zip(dict_head.keys(), dict_head.values(), dict_mid.values(), dict_end.values(),
                                  dict_cyc.values()):
         dict_all_pattern[key] = (h + m + e + c)
-
 
     normalized_head = dict()
     normalized_mid = dict()
