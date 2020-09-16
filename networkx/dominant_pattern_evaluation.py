@@ -4,6 +4,18 @@ import pandas as pd
 __all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_network_info', 'get_cc_ce_df']
 
 
+# get four coefs.
+def get_network_info(G, weight=None):
+    n = G.number_of_nodes()
+    m = G.number_of_edges()
+    cc = nx.average_clustering(G, weight=weight)
+    ce = nx.average_closure(G, weight=weight)
+    iquad, oquad = nx.average_inner_and_outer_quad_co(G, weight=weight)
+
+    res = [n, m, cc, ce, iquad, oquad]
+    return res
+
+
 def get_key_info(G, weight = None):
     n = G.number_of_nodes()
     m = G.number_of_edges()
@@ -13,19 +25,6 @@ def get_key_info(G, weight = None):
     ce = nx.average_closure(G, weight=weight)
 
     res = [n, m, k, r, cc, ce]
-    return res
-
-
-# get four coefs.
-def get_network_info(G, weight=None):
-    n = G.number_of_nodes()
-    m = G.number_of_edges()
-    k = m / n
-    cc = nx.average_clustering(G, weight=weight)
-    ce = nx.average_closure(G, weight=weight)
-    iquad, oquad = nx.average_inner_and_outer_quad_co(G, weight=weight)
-
-    res = [n, m, k, cc, ce, iquad, oquad]
     return res
 
 
