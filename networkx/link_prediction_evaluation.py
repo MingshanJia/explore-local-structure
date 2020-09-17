@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from operator import itemgetter
+from sklearn.preprocessing import normalize
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import auc
 from sklearn.metrics import average_precision_score
@@ -42,24 +43,25 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
     feature_importance /= n
     print("{} :\nPositive_Ratio: {}\nROC-AUC: {};\nPR-AUC: {};\nAve_Precision: {}.".format(method, positive_ratio, roc_auc, pr_auc, ave_precision))
 
-    if number_of_features == 2:
-        features = ['cn', 'l3']
-    if number_of_features == 4:
-        features = ['cn', 'ra', 'l3', 'l3-norm']
-    if number_of_features == 6:
-        features = ['cn', 'ra', 'l3', 'l3-norm', 'clu', 'clo']
-    if number_of_features == 8:
-        features = ['cn', 'ra', 'l3', 'l3-norm', 'clu', 'clo', 'i-quad', 'o-quad']
-    plt.bar(features, feature_importance)
-    plt.show()
-    for feature, score in zip(features, feature_importance):
-        print(feature, score)
+    # if number_of_features == 2:
+    #     features = ['cn', 'l3']
+    # if number_of_features == 4:
+    #     features = ['cn', 'ra', 'l3', 'l3-norm']
+    # if number_of_features == 6:
+    #     features = ['cn', 'ra', 'l3', 'l3-norm', 'clu', 'clo']
+    # if number_of_features == 8:
+    #     features = ['cn', 'ra', 'l3', 'l3-norm', 'clu', 'clo', 'i-quad', 'o-quad']
+    # plt.bar(features, feature_importance)
+    # plt.show()
+    # for feature, score in zip(features, feature_importance):
+    #     print(feature, score)
     return roc_auc, pr_auc, ave_precision, feature_importance
 
 
 
 def get_predicts_labels_and_feature_importance(G_old, G_new, method, number_of_features):
     X, y = get_features_and_labels(G_old, G_new, number_of_features)
+    X = normalize(X)
     if method =='log-reg':
         model = LogisticRegression()
         model.fit(X, y)
@@ -74,9 +76,9 @@ def get_predicts_labels_and_feature_importance(G_old, G_new, method, number_of_f
         importances = model.feature_importances_
     #TODO: add importances for svm
     if method == 'svm':
-        model = svm.SVC(probability=True)
+        model = svm.SVC(kernel='linear', probability=True)
         model.fit(X, y)
-        importances = model.coef_
+        importances = model.coef_[0]
     if method == 'xgboost':
         model = XGBClassifier()
         X = np.asarray(X)
