@@ -1,5 +1,6 @@
 import random
 import networkx as nx
+from math import log
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -46,16 +47,15 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
 
     # if number_of_features == 2:
     #     features = ['cn', 'l3']
-    if number_of_features == 4:
-        features = ['cn', 'ra', 'clu', 'clo']
-    if number_of_features == 6:
-        features = ['cn', 'ra', 'clu', 'clo', 'i-quad', 'o-quad']
+    if number_of_features == 5:
+        features = ['cn', 'aa', 'ra', 'clu', 'clo']
+    if number_of_features == 7:
+        features = ['cn', 'aa', 'ra', 'clu', 'clo', 'i-quad', 'o-quad']
         plt.bar(features, feature_importance)
         plt.show()
         for feature, score in zip(features, feature_importance):
             print(feature, score)
-    # if number_of_features == 8:
-    #     features = ['cn', 'ra', 'l3', 'l3-norm', 'clu', 'clo', 'i-quad', 'o-quad']
+
     return pr_auc, feature_importance
 
 
@@ -75,7 +75,6 @@ def get_predicts_labels_and_feature_importance(G_old, G_new, method, number_of_f
         model = RandomForestClassifier()
         model.fit(X, y)
         importances = model.feature_importances_
-    #TODO: add importances for svm
     if method == 'svm':
         model = svm.SVC(kernel='linear', probability=True)
         model.fit(X, y)
@@ -90,7 +89,7 @@ def get_predicts_labels_and_feature_importance(G_old, G_new, method, number_of_f
     return y, score[:, 1], importances
 
 
-# compare with 4 and 6
+# compare with 5 and 7
 def get_features_and_labels(G_old, G_new, number_of_features):
     possible_links = list(nx.non_edges(G_old))
     X = []
@@ -105,79 +104,36 @@ def get_features_and_labels(G_old, G_new, number_of_features):
             else:
                 y.append(0)
 
-    # if number_of_features == 4:
-    #     for u, v in possible_links:
-    #         cn_score = len(list(nx.common_neighbors(G_old, u, v)))
-    #         ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
-    #         cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
-    #         cn_l3_norm_score = nx.common_neighbors_l3_degree_normalized(G_old, u, v)
-    #         X.append([cn_score, ra_score, cn_l3_score, cn_l3_norm_score])
-    #         if (u, v) in G_new.edges():
-    #             y.append(1)
-    #         else:
-    #             y.append(0)
-
-    if number_of_features == 4:
+    if number_of_features == 5:
         clu_clo_dict = nx.clustering_closure_coefs(G_old)
         for u, v in possible_links:
             cn_score = len(list(nx.common_neighbors(G_old, u, v)))
+            aa_score = sum(1 / log(G_old.degree(w)) for w in nx.common_neighbors(G_old, u, v))
             ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
             clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
             clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
-            X.append([cn_score, ra_score, clu_score, clo_score])
+            X.append([cn_score, aa_score, ra_score, clu_score, clo_score])
             if (u, v) in G_new.edges():
                 y.append(1)
             else:
                 y.append(0)
 
-    # if number_of_features == 6:
-    #     clu_clo_dict = nx.clustering_closure_coefs(G_old)
-    #     for u, v in possible_links:
-    #         cn_score = len(list(nx.common_neighbors(G_old, u, v)))
-    #         ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
-    #         cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
-    #         cn_l3_norm_score = nx.common_neighbors_l3_degree_normalized(G_old, u, v)
-    #         clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
-    #         clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
-    #         X.append([cn_score, ra_score, cn_l3_score, cn_l3_norm_score, clu_score, clo_score])
-    #         if (u, v) in G_new.edges():
-    #             y.append(1)
-    #         else:
-    #             y.append(0)
-
-    if number_of_features == 6:
+    if number_of_features == 7:
         clu_clo_dict = nx.clustering_closure_coefs(G_old)
         iquad_oquad_dict = nx.iquad_oquad_coefs(G_old)
         for u, v in possible_links:
             cn_score = len(list(nx.common_neighbors(G_old, u, v)))
+            aa_score = sum(1 / log(G_old.degree(w)) for w in nx.common_neighbors(G_old, u, v))
             ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
             clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
             clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
             iquad_score = iquad_oquad_dict[u][0] + iquad_oquad_dict[v][0]
             oquad_score = iquad_oquad_dict[u][1] + iquad_oquad_dict[v][1]
-            X.append([cn_score, ra_score, clu_score, clo_score, iquad_score, oquad_score])
+            X.append([cn_score, aa_score, ra_score, clu_score, clo_score, iquad_score, oquad_score])
             if (u, v) in G_new.edges():
                 y.append(1)
             else:
                 y.append(0)
-
-    # if number_of_features == 8:
-    #     clu_clo_dict = nx.clustering_closure_coefs(G_old)
-    #     iquad_oquad_dict = nx.iquad_oquad_coefs(G_old)
-    #     for u, v in possible_links:
-    #         cn_score = len(list(nx.common_neighbors(G_old, u, v)))
-    #         ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
-    #         cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
-    #         cn_l3_norm_score = nx.common_neighbors_l3_degree_normalized(G_old, u, v)
-    #         clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
-    #         clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
-    #         iquad_score = iquad_oquad_dict[u][0] + iquad_oquad_dict[v][0]
-    #         oquad_score = iquad_oquad_dict[u][1] + iquad_oquad_dict[v][1]
-    #         X.append([cn_score, ra_score, cn_l3_score, cn_l3_norm_score, clu_score, clo_score, iquad_score, oquad_score])
-    #         if (u, v) in G_new.edges():
-    #             y.append(1)
-    #         else:
-    #             y.append(0)
     return X, y
 
 
