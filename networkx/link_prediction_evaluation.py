@@ -26,7 +26,7 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
     roc_auc = 0
     pr_auc = 0
     ave_precision = 0
-    feature_importance = np.zeros(number_of_features)
+    feature_importance = np.zeros(round(number_of_features))
     n = len(train_set)
     for g in tqdm(train_set):
         positive_ratio += g[1].number_of_edges() / len(list(nx.non_edges(g[0])))
@@ -89,9 +89,7 @@ def get_predicts_labels_and_feature_importance(G_old, G_new, method, number_of_f
     return y, score[:, 1], importances
 
 
-# two default features: cn, cn-l3
-# four features + clustering coef. and closure coef.
-# six features + iquad features and oquad coef.
+# compare with 4 and 6
 def get_features_and_labels(G_old, G_new, number_of_features):
     possible_links = list(nx.non_edges(G_old))
     X = []
@@ -106,50 +104,79 @@ def get_features_and_labels(G_old, G_new, number_of_features):
             else:
                 y.append(0)
 
-    if number_of_features == 4:
-        for u, v in possible_links:
-            cn_score = len(list(nx.common_neighbors(G_old, u, v)))
-            ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
-            cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
-            cn_l3_norm_score = nx.common_neighbors_l3_degree_normalized(G_old, u, v)
-            X.append([cn_score, ra_score, cn_l3_score, cn_l3_norm_score])
-            if (u, v) in G_new.edges():
-                y.append(1)
-            else:
-                y.append(0)
+    # if number_of_features == 4:
+    #     for u, v in possible_links:
+    #         cn_score = len(list(nx.common_neighbors(G_old, u, v)))
+    #         ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
+    #         cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
+    #         cn_l3_norm_score = nx.common_neighbors_l3_degree_normalized(G_old, u, v)
+    #         X.append([cn_score, ra_score, cn_l3_score, cn_l3_norm_score])
+    #         if (u, v) in G_new.edges():
+    #             y.append(1)
+    #         else:
+    #             y.append(0)
 
-    if number_of_features == 6:
+    if number_of_features == 4:
         clu_clo_dict = nx.clustering_closure_coefs(G_old)
         for u, v in possible_links:
             cn_score = len(list(nx.common_neighbors(G_old, u, v)))
             ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
-            cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
-            cn_l3_norm_score = nx.common_neighbors_l3_degree_normalized(G_old, u, v)
             clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
             clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
-            X.append([cn_score, ra_score, cn_l3_score, cn_l3_norm_score, clu_score, clo_score])
+            X.append([cn_score, ra_score, clu_score, clo_score])
             if (u, v) in G_new.edges():
                 y.append(1)
             else:
                 y.append(0)
 
-    if number_of_features == 8:
+    # if number_of_features == 6:
+    #     clu_clo_dict = nx.clustering_closure_coefs(G_old)
+    #     for u, v in possible_links:
+    #         cn_score = len(list(nx.common_neighbors(G_old, u, v)))
+    #         ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
+    #         cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
+    #         cn_l3_norm_score = nx.common_neighbors_l3_degree_normalized(G_old, u, v)
+    #         clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
+    #         clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
+    #         X.append([cn_score, ra_score, cn_l3_score, cn_l3_norm_score, clu_score, clo_score])
+    #         if (u, v) in G_new.edges():
+    #             y.append(1)
+    #         else:
+    #             y.append(0)
+
+    if number_of_features == 6:
         clu_clo_dict = nx.clustering_closure_coefs(G_old)
         iquad_oquad_dict = nx.iquad_oquad_coefs(G_old)
         for u, v in possible_links:
             cn_score = len(list(nx.common_neighbors(G_old, u, v)))
             ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
-            cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
-            cn_l3_norm_score = nx.common_neighbors_l3_degree_normalized(G_old, u, v)
             clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
             clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
             iquad_score = iquad_oquad_dict[u][0] + iquad_oquad_dict[v][0]
             oquad_score = iquad_oquad_dict[u][1] + iquad_oquad_dict[v][1]
-            X.append([cn_score, ra_score, cn_l3_score, cn_l3_norm_score, clu_score, clo_score, iquad_score, oquad_score])
+            X.append([cn_score, ra_score, clu_score, clo_score, iquad_score, oquad_score])
             if (u, v) in G_new.edges():
                 y.append(1)
             else:
                 y.append(0)
+
+    # if number_of_features == 8:
+    #     clu_clo_dict = nx.clustering_closure_coefs(G_old)
+    #     iquad_oquad_dict = nx.iquad_oquad_coefs(G_old)
+    #     for u, v in possible_links:
+    #         cn_score = len(list(nx.common_neighbors(G_old, u, v)))
+    #         ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
+    #         cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
+    #         cn_l3_norm_score = nx.common_neighbors_l3_degree_normalized(G_old, u, v)
+    #         clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
+    #         clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
+    #         iquad_score = iquad_oquad_dict[u][0] + iquad_oquad_dict[v][0]
+    #         oquad_score = iquad_oquad_dict[u][1] + iquad_oquad_dict[v][1]
+    #         X.append([cn_score, ra_score, cn_l3_score, cn_l3_norm_score, clu_score, clo_score, iquad_score, oquad_score])
+    #         if (u, v) in G_new.edges():
+    #             y.append(1)
+    #         else:
+    #             y.append(0)
     return X, y
 
 
