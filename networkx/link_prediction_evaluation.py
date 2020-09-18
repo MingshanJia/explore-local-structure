@@ -23,9 +23,9 @@ __all__ = ['link_predict_supervised_learning', 'get_dataset',
 #APP 1
 def link_predict_supervised_learning(train_set, method='log-reg', number_of_features=2):
     positive_ratio = 0
-    roc_auc = 0
+    #roc_auc = 0
     pr_auc = 0
-    ave_precision = 0
+    #ave_precision = 0
     feature_importance = np.zeros(round(number_of_features))
     n = len(train_set)
     for g in tqdm(train_set):
@@ -33,15 +33,16 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
         label_all, score_all, feature_importance_of_g = get_predicts_labels_and_feature_importance(g[0], g[1],  method, number_of_features)
         precision, recall, _ = precision_recall_curve(label_all, score_all)
         pr_auc += auc(recall, precision)
-        roc_auc += roc_auc_score(label_all, score_all)
-        ave_precision += average_precision_score(label_all, score_all)
+        #roc_auc += roc_auc_score(label_all, score_all)
+        #ave_precision += average_precision_score(label_all, score_all)
         feature_importance += feature_importance_of_g
     positive_ratio /= n
-    roc_auc /= n
+    #roc_auc /= n
     pr_auc /= n
-    ave_precision /= n
+    #ave_precision /= n
     feature_importance /= n
-    print("{} :\nPositive_Ratio: {}\nROC-AUC: {};\nPR-AUC: {};\nAve_Precision: {}.".format(method, positive_ratio, roc_auc, pr_auc, ave_precision))
+
+    print("{} :\nPositive_Ratio: {}\nPR-AUC: {}.".format(method, positive_ratio, pr_auc))
 
     # if number_of_features == 2:
     #     features = ['cn', 'l3']
@@ -55,7 +56,7 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
     # plt.show()
     # for feature, score in zip(features, feature_importance):
     #     print(feature, score)
-    return roc_auc, pr_auc, ave_precision, feature_importance
+    return pr_auc, feature_importance
 
 
 
