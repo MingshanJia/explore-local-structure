@@ -46,16 +46,16 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
 
     # if number_of_features == 2:
     #     features = ['cn', 'l3']
-    # if number_of_features == 4:
-    #     features = ['cn', 'ra', 'l3', 'l3-norm']
-    # if number_of_features == 6:
-    #     features = ['cn', 'ra', 'l3', 'l3-norm', 'clu', 'clo']
+    if number_of_features == 4:
+        features = ['cn', 'ra', 'clu', 'clo']
+    if number_of_features == 6:
+        features = ['cn', 'ra', 'clu', 'clo', 'i-quad', 'o-quad']
+        plt.bar(features, feature_importance)
+        plt.show()
+        for feature, score in zip(features, feature_importance):
+            print(feature, score)
     # if number_of_features == 8:
     #     features = ['cn', 'ra', 'l3', 'l3-norm', 'clu', 'clo', 'i-quad', 'o-quad']
-    # plt.bar(features, feature_importance)
-    # plt.show()
-    # for feature, score in zip(features, feature_importance):
-    #     print(feature, score)
     return pr_auc, feature_importance
 
 
