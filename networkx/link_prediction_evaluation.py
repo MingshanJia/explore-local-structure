@@ -34,7 +34,10 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
         label_all, score_all, feature_importance_of_g = get_predicts_labels_and_feature_importance(g[0], g[1],  method, number_of_features)
         precision, recall, _ = precision_recall_curve(label_all, score_all)
         pr_auc += auc(recall, precision)
-        roc_auc += roc_auc_score(label_all, score_all)
+        try:
+            roc_auc += roc_auc_score(label_all, score_all)
+        except ValueError:
+            pass
         #ave_precision += average_precision_score(label_all, score_all)
         feature_importance += feature_importance_of_g
     positive_ratio /= n
