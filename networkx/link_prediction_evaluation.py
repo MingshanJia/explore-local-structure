@@ -139,7 +139,7 @@ def get_features_and_labels(G_old, G_new, number_of_features):
 # dataset with timestamp: set repeat = 1
 def get_dataset(G, repeat = 10, old_pct = 0.7):
     dataset = []
-    all_edges = list(G.edges())
+    all_edges = list(G.edges(data=True))
     k = round(len(all_edges) * old_pct)
     print("using {:f} % of edges to predict {:f} % edges".format(100 * old_pct, (100 * (1 - old_pct))))
 
@@ -149,7 +149,6 @@ def get_dataset(G, repeat = 10, old_pct = 0.7):
         if G.number_of_nodes() > 100000:
             sample_time = 50  # increase to 100
         print("sample 5K nodes for {} times".format(sample_time))
-
     else:
         sample = False
         sample_time = 1
@@ -171,7 +170,6 @@ def get_dataset(G, repeat = 10, old_pct = 0.7):
 
             G_old = nx.Graph()
             G_new = nx.Graph()
-            #random.shuffle(all_edges)
             old_edges = all_edges[:k]
             new_edges = all_edges[k:]
             G_old.add_edges_from(old_edges)
