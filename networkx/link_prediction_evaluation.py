@@ -24,7 +24,7 @@ __all__ = ['link_predict_supervised_learning', 'get_dataset',
 #APP 1
 def link_predict_supervised_learning(train_set, method='log-reg', number_of_features=2):
     positive_ratio = 0
-    #roc_auc = 0
+    roc_auc = 0
     pr_auc = 0
     #ave_precision = 0
     feature_importance = np.zeros(round(number_of_features))
@@ -34,16 +34,16 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
         label_all, score_all, feature_importance_of_g = get_predicts_labels_and_feature_importance(g[0], g[1],  method, number_of_features)
         precision, recall, _ = precision_recall_curve(label_all, score_all)
         pr_auc += auc(recall, precision)
-        #roc_auc += roc_auc_score(label_all, score_all)
+        roc_auc += roc_auc_score(label_all, score_all)
         #ave_precision += average_precision_score(label_all, score_all)
         feature_importance += feature_importance_of_g
     positive_ratio /= n
-    #roc_auc /= n
+    roc_auc /= n
     pr_auc /= n
     #ave_precision /= n
     feature_importance /= n
 
-    print("{} :\nPositive_Ratio: {}\nPR-AUC: {}.".format(method, positive_ratio, pr_auc))
+    print("{} :\nPositive_Ratio: {}\nROC-AUC: {}\nPR-AUC: {}.".format(method, positive_ratio, roc_auc, pr_auc))
 
     # if number_of_features == 2:
     #     features = ['cn', 'l3']
@@ -56,7 +56,7 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
         for feature, score in zip(features, feature_importance):
             print(feature, score)
 
-    return pr_auc, feature_importance
+    return roc_auc, pr_auc, feature_importance
 
 
 
@@ -136,7 +136,7 @@ def get_features_and_labels(G_old, G_new, number_of_features):
                 y.append(0)
     return X, y
 
-
+# dataset with timestamp: set repeat = 1
 def get_dataset(G, repeat = 10, old_pct = 0.7):
     dataset = []
     all_edges = list(G.edges())
@@ -145,8 +145,11 @@ def get_dataset(G, repeat = 10, old_pct = 0.7):
 
     if G.number_of_nodes() > 10000:
         sample = True
-        sample_time = 10
-        print("sample 5K nodes for 10 times")
+        sample_time = 5    # increase to 10
+        if G.number_of_nodes() > 100000:
+            sample_time = 50  # increase to 100
+        print("sample 5K nodes for {} times".format(sample_time))
+
     else:
         sample = False
         sample_time = 1
@@ -161,9 +164,14 @@ def get_dataset(G, repeat = 10, old_pct = 0.7):
             all_edges = list(G_sampled.edges(data=True))
 
         for n in range(0, repeat):
+            if repeat == 1:
+                all_edges = sorted(all_edges, key=lambda t: t[2].get('sec'))  # for dataset with timestamp
+            else:
+                random.shuffle(all_edges)
+
             G_old = nx.Graph()
             G_new = nx.Graph()
-            random.shuffle(all_edges)
+            #random.shuffle(all_edges)
             old_edges = all_edges[:k]
             new_edges = all_edges[k:]
             G_old.add_edges_from(old_edges)
