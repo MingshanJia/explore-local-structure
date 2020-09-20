@@ -137,8 +137,6 @@ def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, old_pct=0.5):
     dataset = []
     if G.number_of_nodes() > 10000:
         sample = True
-        if G.number_of_nodes() > 100000:
-            sample_time = 50
         print("sample {} nodes for {} times".format(sample_size, sample_time))
     else:
         sample = False
