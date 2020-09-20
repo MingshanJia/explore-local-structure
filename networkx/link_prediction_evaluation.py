@@ -16,13 +16,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm
 from xgboost import XGBClassifier
 
-__all__ = ['link_predict_supervised_learning', 'get_dataset',
-           'link_predict_similarity_based', 'undir_link_pred_app', 'link_pred_app', ]
-# usage: 1. train_set = nx.get_train_set(G)    2. nx.link_predict_supervised_learning(train_set)
+__all__ = ['link_predict_supervised_learning', 'get_dataset', 'get_sample_graph',
+           'link_predict_similarity_based', 'undir_link_pred_app', 'link_pred_app',]
+# usage: 1. train_set = nx.get_dataset(G)    2. nx.link_predict_supervised_learning(train_set)
 
 
 #APP 1
-def link_predict_supervised_learning(train_set, method='log-reg', number_of_features=2):
+def link_predict_supervised_learning(train_set, method='log-reg', number_of_features=5):
     positive_ratio = 0
     roc_auc = 0
     pr_auc = 0
@@ -48,10 +48,6 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
 
     print("{} :\nPositive_Ratio: {}\nROC-AUC: {}\nPR-AUC: {}.".format(method, positive_ratio, roc_auc, pr_auc))
 
-    # if number_of_features == 2:
-    #     features = ['cn', 'l3']
-    if number_of_features == 5:
-        features = ['cn', 'aa', 'ra', 'clu', 'clo']
     if number_of_features == 7:
         features = ['cn', 'aa', 'ra', 'clu', 'clo', 'i-quad', 'o-quad']
         plt.bar(features, feature_importance)
@@ -60,7 +56,6 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
             print(feature, score)
 
     return roc_auc, pr_auc, feature_importance
-
 
 
 def get_predicts_labels_and_feature_importance(G_old, G_new, method, number_of_features):
@@ -139,31 +134,29 @@ def get_features_and_labels(G_old, G_new, number_of_features):
                 y.append(0)
     return X, y
 
-# dataset with timestamp: set repeat = 1
-def get_dataset(G, repeat = 10, old_pct = 0.7):
-    dataset = []
-    all_edges = list(G.edges(data=True))
-    k = round(len(all_edges) * old_pct)
-    print("using {:f} % of edges to predict {:f} % edges".format(100 * old_pct, (100 * (1 - old_pct))))
 
+# dataset with timestamp: set repeat = 1
+def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, old_pct=0.5):
+    dataset = []
     if G.number_of_nodes() > 10000:
         sample = True
-        sample_time = 5    # increase to 10
         if G.number_of_nodes() > 100000:
-            sample_time = 50  # increase to 100
-        print("sample 5K nodes for {} times".format(sample_time))
+            sample_time = 50
+        print("sample {} nodes for {} times".format(sample_size, sample_time))
     else:
         sample = False
         sample_time = 1
         print("no sampling")
 
+    print("Old graph new graph split time: {}: using {:f} % of edges to predict {:f} % edges".
+          format(repeat, 100 * old_pct, (100 * (1 - old_pct))))
     for i in range(0, sample_time):
         if sample:
-            random_edge = random.choice(all_edges)
-            random_node = random_edge[0]
-            sample_nodes = get_sample_nodes(G, random_node, 5000)
-            G_sampled = G.subgraph(sample_nodes)
+            G_sampled = get_sample_graph(G, sample_size)
             all_edges = list(G_sampled.edges(data=True))
+        else:
+            all_edges = list(G.edges(data=True))
+        k = round(len(all_edges) * old_pct)
 
         for n in range(0, repeat):
             if repeat == 1:
@@ -259,11 +252,7 @@ def undir_link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0
         print('sample: %d' % i)
 
         if sample:
-            random_edge = random.choice(e_all)
-            random_node = random_edge[0]
-            sample_nodes = get_sample_nodes(G, random_node, sample_size)
-            print("sampling done")
-            G_sampled = G.subgraph(sample_nodes)
+            G_sampled = get_sample_graph(G, sample_size)
             e_sampled = list(G_sampled.edges(data=True))
         else:
             e_sampled = e_all
@@ -314,7 +303,6 @@ def undir_link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0
     return res
 
 
-
 # when nodes > 10K, sampling.
 # when graph has timestamps, repeat = 1
 def link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
@@ -343,11 +331,7 @@ def link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
         print('sample: %d' % i)
 
         if sample:
-            random_edge = random.choice(e_all)
-            random_node = random_edge[0]
-            sample_nodes = get_sample_nodes(G, random_node, sample_size)
-            print("sampling done")
-            G_sampled = G.subgraph(sample_nodes)
+            G_sampled = get_sample_graph(G, sample_size)
             e_sampled = list(G_sampled.edges(data=True))
         else:
             e_sampled = e_all
@@ -401,27 +385,24 @@ def link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
     return res
 
 
-
-
-# get sample: connected nodes
-def get_sample_nodes(G, random_node, sample_size):
+# get sample graph: 2000 connected nodes
+def get_sample_graph(G, sample_size=2000):
+    all_nodes = list(G.nodes)
     res_list = []  # result list of connected nodes
     work_list = []
     visited_list = []
+    random_node = random.choice(all_nodes)
     res_list.append(random_node)
     work_list.append(random_node)
 
     while (len(res_list) < sample_size) and (len(work_list) > 0):
-
         for n in work_list:
             for nbr in nx.all_neighbors(G, n):
                 if nbr not in res_list:
                     res_list.append(nbr)
                     # return faster
                     if len(res_list) == sample_size:
-                        return res_list          
+                        return G.subgraph(res_list)
             visited_list.append(n)
-
         work_list = [n for n in res_list if n not in visited_list]
-
-    return res_list[: sample_size]
+    return G.subgraph(res_list[: sample_size])
