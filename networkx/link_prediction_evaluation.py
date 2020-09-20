@@ -52,7 +52,7 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
         for feature, score in zip(features, feature_importance):
             print(feature, score)
 
-    return roc_auc, pr_auc, feature_importance
+    return positive_ratio, roc_auc, pr_auc, feature_importance
 
 
 def get_predicts_labels_and_feature_importance(G_old, G_new, method, number_of_features):
