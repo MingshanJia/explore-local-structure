@@ -386,18 +386,20 @@ def get_sample_graph(G, sample_size=2000):
     res_list = []  # result list of connected nodes
     work_list = []
     visited_list = []
-    random_node = random.choice(all_nodes)
-    res_list.append(random_node)
-    work_list.append(random_node)
 
-    while (len(res_list) < sample_size) and (len(work_list) > 0):
-        for n in work_list:
-            for nbr in nx.all_neighbors(G, n):
-                if nbr not in res_list:
-                    res_list.append(nbr)
-                    # return faster
-                    if len(res_list) == sample_size:
-                        return G.subgraph(res_list)
-            visited_list.append(n)
-        work_list = [n for n in res_list if n not in visited_list]
+    while len(res_list) < sample_size:
+        random_node = random.choice(all_nodes)
+        res_list.append(random_node)
+        work_list.append(random_node)
+
+        while (len(res_list) < sample_size) and (len(work_list) > 0):
+            for n in work_list:
+                for nbr in nx.all_neighbors(G, n):
+                    if nbr not in res_list:
+                        res_list.append(nbr)
+                        # return faster
+                        if len(res_list) == sample_size:
+                            return G.subgraph(res_list)
+                visited_list.append(n)
+            work_list = [n for n in res_list if n not in visited_list]
     return G.subgraph(res_list[: sample_size])
