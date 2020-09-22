@@ -43,7 +43,7 @@ def link_predict_supervised_learning(dataset, method='log-reg', number_of_featur
     #ave_precision /= n
     feature_importance /= n
 
-    print("{} :\nPositive_Ratio: {}\nROC-AUC: {}\nPR-AUC: {}.".format(method, positive_ratio, roc_auc, pr_auc))
+    print("{} with {} features:\nPositive_Ratio: {}\nROC-AUC: {}\nPR-AUC: {}".format(method, number_of_features, positive_ratio, roc_auc, pr_auc))
 
     if number_of_features == 7:
         features = ['cn', 'aa', 'ra', 'clu', 'clo', 'i-quad', 'o-quad']
