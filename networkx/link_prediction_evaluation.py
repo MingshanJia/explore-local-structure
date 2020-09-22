@@ -22,16 +22,16 @@ __all__ = ['link_predict_supervised_learning', 'get_dataset', 'get_sample_graph'
 
 
 #APP 1
-def link_predict_supervised_learning(train_set, method='log-reg', number_of_features=5):
+def link_predict_supervised_learning(dataset, method='log-reg', number_of_features=5):
     positive_ratio = 0
     roc_auc = 0
     pr_auc = 0
     #ave_precision = 0
     feature_importance = np.zeros(round(number_of_features))
-    n = len(train_set)
-    for g in tqdm(train_set):
+    n = len(dataset)
+    for g in tqdm(dataset):
         positive_ratio += g[1].number_of_edges() / len(list(nx.non_edges(g[0])))
-        label_all, score_all, feature_importance_of_g = get_predicts_labels_and_feature_importance(g[0], g[1],  method, number_of_features)
+        label_all, score_all, feature_importance_of_g = get_predicts_labels_and_feature_importance(g[0], g[1], g[2], g[3], method, number_of_features)
         precision, recall, _ = precision_recall_curve(label_all, score_all)
         pr_auc += auc(recall, precision)
         roc_auc += roc_auc_score(label_all, score_all)
@@ -55,33 +55,35 @@ def link_predict_supervised_learning(train_set, method='log-reg', number_of_feat
     return positive_ratio, roc_auc, pr_auc, feature_importance
 
 
-def get_predicts_labels_and_feature_importance(G_old, G_new, method, number_of_features):
-    X, y = get_features_and_labels(G_old, G_new, number_of_features)
-    X = normalize(X)
+def get_predicts_labels_and_feature_importance(G_train, G_test, G_train_old, G_train_new, method, number_of_features):
+    X_train, y_train = get_features_and_labels(G_train_old, G_train_new, number_of_features)  # train is on G_train_old + G_train_new
+    X_test, y_test = get_features_and_labels(G_train, G_test, number_of_features)   # test in on G_train + G_test
+    X_train = normalize(X_train)
+    X_test = normalize(X_test)
     if method =='log-reg':
         model = LogisticRegression()
-        model.fit(X, y)
+        model.fit(X_train, y_train)
         importances = model.coef_[0]
     if method == 'tree':
         model = DecisionTreeClassifier()
-        model.fit(X, y)
+        model.fit(X_train, y_train)
         importances = model.feature_importances_
     if method == 'forest':
         model = RandomForestClassifier()
-        model.fit(X, y)
+        model.fit(X_train, y_train)
         importances = model.feature_importances_
     if method == 'svm':
         model = svm.SVC(kernel='linear', probability=True)
-        model.fit(X, y)
+        model.fit(X_train, y_train)
         importances = model.coef_[0]
     if method == 'xgboost':
         model = XGBClassifier()
-        X = np.asarray(X)
-        model.fit(X, y)
+        X = np.asarray(X_train)
+        model.fit(X, y_train)
         importances = model.feature_importances_
 
-    score = model.predict_proba(X)
-    return y, score[:, 1], importances
+    score = model.predict_proba(X_test)
+    return y_test, score[:, 1], importances
 
 
 # compare with 5 and 7
@@ -133,7 +135,9 @@ def get_features_and_labels(G_old, G_new, number_of_features):
 
 
 # dataset with timestamp: set repeat = 1
-def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, old_pct=0.5):
+# plit into train and test dataset, then split train set into train_old and train_new in order to fit into the model,
+# and evaluate the model in test set.
+def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, train_pct=0.7, train_old_pct=0.7):
     dataset = []
     if G.number_of_nodes() > 10000:
         sample = True
@@ -143,15 +147,16 @@ def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, old_pct=0.5):
         sample_time = 1
         print("no sampling")
 
-    print("Old graph new graph split time: {}: using {:f} % of edges to predict {:f} % edges".
-          format(repeat, 100 * old_pct, (100 * (1 - old_pct))))
+    print("train test split time: {}: using {:.2f} % of edges to predict {:.2f} % edges".
+          format(repeat, 100 * train_pct, (100 * (1 - train_pct))))
     for i in range(0, sample_time):
         if sample:
             G_sampled = get_sample_graph(G, sample_size)
             all_edges = list(G_sampled.edges(data=True))
         else:
             all_edges = list(G.edges(data=True))
-        k = round(len(all_edges) * old_pct)
+        k = round(len(all_edges) * train_pct)
+        l = round(k * train_old_pct)
 
         for n in range(0, repeat):
             if repeat == 1:
@@ -159,14 +164,23 @@ def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, old_pct=0.5):
             else:
                 random.shuffle(all_edges)
 
-            G_old = nx.Graph()
-            G_new = nx.Graph()
-            old_edges = all_edges[:k]
-            new_edges = all_edges[k:]
-            G_old.add_edges_from(old_edges)
-            G_new.add_edges_from(new_edges)
-            G_new = G_new.subgraph(G_old.nodes())
-            dataset.append([G_old, G_new])
+            G_train = nx.Graph()
+            G_test = nx.Graph()
+            train_edges = all_edges[:k]
+            test_edges = all_edges[k:]
+            G_train.add_edges_from(train_edges)
+            G_test.add_edges_from(test_edges)
+            G_test = G_test.subgraph(G_train.nodes())
+
+            G_train_old = nx.Graph()
+            G_train_new = nx.Graph()
+            train_old_edges = train_edges[:l]
+            train_new_edges = train_edges[l:]
+            G_train_old.add_edges_from(train_old_edges)
+            G_train_new.add_edges_from(train_new_edges)
+            G_train_new = G_train_new.subgraph(G_train_old.nodes())
+
+            dataset.append([G_train, G_test, G_train_old, G_train_new])
     print("Number of dataset: {}".format(sample_time * repeat))
     return dataset
 
