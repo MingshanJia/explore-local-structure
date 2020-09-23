@@ -1,6 +1,7 @@
 import random
 import networkx as nx
 from math import log
+from queue import Queue
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -16,7 +17,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm
 from xgboost import XGBClassifier
 
-__all__ = ['link_predict_supervised_learning', 'get_dataset', 'get_sample_graph',
+__all__ = ['link_predict_supervised_learning', 'get_dataset', 'BFS_sampling',
            'link_predict_similarity_based', 'undir_link_pred_app', 'link_pred_app',]
 # usage: 1. train_set = nx.get_dataset(G)    2. nx.link_predict_supervised_learning(train_set)
 
@@ -43,7 +44,7 @@ def link_predict_supervised_learning(dataset, method='log-reg', number_of_featur
     #ave_precision /= n
     feature_importance /= n
 
-    print("{} with {} features:\nPositive_Ratio: {}\nROC-AUC: {}\nPR-AUC: {}".format(method, number_of_features, positive_ratio, roc_auc, pr_auc))
+    print("{} with {} features:\nPositive_Ratio: {}\nPR-AUC: {}\nROC-AUC: {}".format(method, number_of_features, positive_ratio, pr_auc, roc_auc))
 
     if number_of_features == 7:
         features = ['cn', 'aa', 'ra', 'clu', 'clo', 'i-quad', 'o-quad']
@@ -52,7 +53,7 @@ def link_predict_supervised_learning(dataset, method='log-reg', number_of_featur
         for feature, score in zip(features, feature_importance):
             print(feature, score)
 
-    return positive_ratio, roc_auc, pr_auc, feature_importance
+    return positive_ratio, pr_auc, roc_auc, feature_importance
 
 
 def get_predicts_labels_and_feature_importance(G_train, G_test, G_train_old, G_train_new, method, number_of_features):
@@ -151,7 +152,7 @@ def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, train_pct=0.7, tra
           format(repeat, 100 * train_pct, (100 * (1 - train_pct))))
     for i in range(0, sample_time):
         if sample:
-            G_sampled = get_sample_graph(G, sample_size)
+            G_sampled = BFS_sampling(G, sample_size)
             all_edges = list(G_sampled.edges(data=True))
         else:
             all_edges = list(G.edges(data=True))
@@ -261,7 +262,7 @@ def undir_link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0
         print('sample: %d' % i)
 
         if sample:
-            G_sampled = get_sample_graph(G, sample_size)
+            G_sampled = BFS_sampling(G, sample_size)
             e_sampled = list(G_sampled.edges(data=True))
         else:
             e_sampled = e_all
@@ -340,7 +341,7 @@ def link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
         print('sample: %d' % i)
 
         if sample:
-            G_sampled = get_sample_graph(G, sample_size)
+            G_sampled = BFS_sampling(G, sample_size)
             e_sampled = list(G_sampled.edges(data=True))
         else:
             e_sampled = e_all
@@ -394,26 +395,23 @@ def link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
     return res
 
 
-# get sample graph: 2000 connected nodes
-def get_sample_graph(G, sample_size=2000):
+# get sample graph
+def BFS_sampling(G, sample_size=2000):
     all_nodes = list(G.nodes)
-    res_list = []  # result list of connected nodes
-    work_list = []
-    visited_list = []
-
-    while len(res_list) < sample_size:
+    sampled_nodes = []  # result list of connected nodes
+    queue = Queue()
+    while len(sampled_nodes) < sample_size:
         random_node = random.choice(all_nodes)
-        res_list.append(random_node)
-        work_list.append(random_node)
-
-        while (len(res_list) < sample_size) and (len(work_list) > 0):
-            for n in work_list:
-                for nbr in nx.all_neighbors(G, n):
-                    if nbr not in res_list:
-                        res_list.append(nbr)
-                        # return faster
-                        if len(res_list) == sample_size:
-                            return G.subgraph(res_list)
-                visited_list.append(n)
-            work_list = [n for n in res_list if n not in visited_list]
-    return G.subgraph(res_list[: sample_size])
+        sampled_nodes.append(random_node)
+        queue.put(random_node)
+        while (len(sampled_nodes) < sample_size) and (not queue.empty()):
+            n = queue.get()
+            neigbhors = list(nx.all_neighbors(G, n))
+            random.shuffle(neigbhors)
+            for nbr in neigbhors:
+                if nbr not in sampled_nodes:
+                    sampled_nodes.append(nbr)
+                    queue.put(nbr)
+                    if len(sampled_nodes) == sample_size:
+                        return G.subgraph(sampled_nodes)
+    return G.subgraph(sampled_nodes[: sample_size])
