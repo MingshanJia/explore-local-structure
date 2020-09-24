@@ -23,115 +23,89 @@ __all__ = ['link_predict_supervised_learning', 'get_dataset', 'BFS_sampling',
 
 
 #APP 1
-def link_predict_supervised_learning(dataset, method='log-reg', number_of_features=5):
-    positive_ratio = 0
-    roc_auc = 0
-    pr_auc = 0
-    #ave_precision = 0
-    feature_importance = np.zeros(round(number_of_features))
+def link_predict_supervised_learning(dataset, method='xgboost'):
+    #positive_ratio = 0
+    roc_auc_1 = 0
+    roc_auc_2 = 0
+    roc_auc_3 = 0
+    roc_auc_4 = 0
+    feature_importance = np.zeros(7)
     n = len(dataset)
     for g in tqdm(dataset):
-        positive_ratio += g[1].number_of_edges() / len(list(nx.non_edges(g[0])))
-        label_all, score_all, feature_importance_of_g = get_predicts_labels_and_feature_importance(g[0], g[1], g[2], g[3], method, number_of_features)
-        precision, recall, _ = precision_recall_curve(label_all, score_all)
-        pr_auc += auc(recall, precision)
-        roc_auc += roc_auc_score(label_all, score_all)
-        #ave_precision += average_precision_score(label_all, score_all)
-        feature_importance += feature_importance_of_g
-    positive_ratio /= n
-    roc_auc /= n
-    pr_auc /= n
-    #ave_precision /= n
+        #positive_ratio += g[1].number_of_edges() / len(list(nx.non_edges(g[0])))
+        y_test, score_1, score_2, score_3, score_4, feature_importance_g = get_predicts_labels_and_feature_importance(g[0], g[1], g[2], g[3], method)
+        roc_auc_1 += roc_auc_score(y_test, score_1)
+        roc_auc_2 += roc_auc_score(y_test, score_2)
+        roc_auc_3 += roc_auc_score(y_test, score_3)
+        roc_auc_4 += roc_auc_score(y_test, score_4)
+        feature_importance += feature_importance_g
+    #positive_ratio /= n
+    roc_auc_1 /= n
+    roc_auc_2 /= n
+    roc_auc_3 /= n
+    roc_auc_4 /= n
     feature_importance /= n
+    print("Model: {}, result in ROC-AUC".format(method))
+    print("with baseline features:                   {}".format(roc_auc_1))
+    print("with baseline features + i-quad:          {}".format(roc_auc_2))
+    print("with baseline features + o-quad:          {}".format(roc_auc_3))
+    print("with baseline features + i-quad + o-quad: {}".format(roc_auc_4))
 
-    print("{} with {} features:\nPositive_Ratio: {}\nPR-AUC: {}\nROC-AUC: {}".format(method, number_of_features, positive_ratio, pr_auc, roc_auc))
-
-    if number_of_features == 7:
-        features = ['cn', 'aa', 'ra', 'clu', 'clo', 'i-quad', 'o-quad']
-        plt.bar(features, feature_importance)
-        plt.show()
-        for feature, score in zip(features, feature_importance):
-            print(feature, score)
-
-    return positive_ratio, pr_auc, roc_auc, feature_importance
+    features = ['cn', 'aa', 'ra', 'clu', 'clo', 'i-quad', 'o-quad']
+    plt.bar(features, feature_importance)
+    plt.show()
+    for feature, score in zip(features, feature_importance):
+        print(feature, score)
+    return roc_auc_1, roc_auc_2, roc_auc_3, roc_auc_4, feature_importance
 
 
-def get_predicts_labels_and_feature_importance(G_train, G_test, G_train_old, G_train_new, method, number_of_features):
-    X_train, y_train = get_features_and_labels(G_train_old, G_train_new, number_of_features)  # train is on G_train_old + G_train_new
-    X_test, y_test = get_features_and_labels(G_train, G_test, number_of_features)   # test in on G_train + G_test
+# compare with 4 feature sets:
+# set 1: 5 baseline features
+# set 2: baseline features + iquad
+# set 3: baseline features + oquad
+# set 4: baseline features + iquad + oquad
+def get_predicts_labels_and_feature_importance(G_train, G_test, G_train_old, G_train_new, method):
+    X_train, y_train = get_data_targets(G_train_old, G_train_new)  # train is on G_train_old + G_train_new
+    X_test, y_test = get_data_targets(G_train, G_test)   # test in on G_train + G_test
     X_train = normalize(X_train)
     X_test = normalize(X_test)
-    if method =='log-reg':
-        model = LogisticRegression()
-        model.fit(X_train, y_train)
-        importances = model.coef_[0]
-    if method == 'tree':
-        model = DecisionTreeClassifier()
-        model.fit(X_train, y_train)
-        importances = model.feature_importances_
-    if method == 'forest':
-        model = RandomForestClassifier()
-        model.fit(X_train, y_train)
-        importances = model.feature_importances_
-    if method == 'svm':
-        model = svm.SVC(kernel='linear', probability=True)
-        model.fit(X_train, y_train)
-        importances = model.coef_[0]
-    if method == 'xgboost':
-        model = XGBClassifier()
-        X = np.asarray(X_train)
-        model.fit(X, y_train)
-        importances = model.feature_importances_
+    X_train = np.array(X_train)
+    X_test = np.array(X_test)
 
-    score = model.predict_proba(X_test)
-    return y_test, score[:, 1], importances
+    model = XGBClassifier()
+    model.fit(X_train[:, :5], y_train)
+    score_1 = model.predict_proba(X_test[:, :5])
+    model.fit(X_train[:, :6], y_train)
+    score_2 = model.predict_proba(X_test[:, :6])
+    model.fit(X_train[:, [0, 1, 2, 3, 4, 6]], y_train)
+    score_3 = model.predict_proba(X_test[:, [0, 1, 2, 3, 4, 6]])
+    model.fit(X_train, y_train)
+    score_4 = model.predict_proba(X_test)
+    importances = model.feature_importances_
+
+    return y_test, score_1[:, 1], score_2[:, 1], score_3[:, 1], score_4[:, 1], importances
 
 
-# compare with 5 and 7
-def get_features_and_labels(G_old, G_new, number_of_features):
+# get data (with all 7 features) and targets
+def get_data_targets(G_old, G_new):
     possible_links = list(nx.non_edges(G_old))
     X = []
     y = []
-    if number_of_features == 2:
-        for u, v in possible_links:
-            cn_score = len(list(nx.common_neighbors(G_old, u, v)))
-            cn_l3_score = nx.common_neighbors_l3(G_old, u, v)
-            X.append([cn_score, cn_l3_score])
-            if (u, v) in G_new.edges():
-                y.append(1)
-            else:
-                y.append(0)
-
-    if number_of_features == 5:
-        clu_clo_dict = nx.clustering_closure_coefs(G_old)
-        for u, v in possible_links:
-            cn_score = len(list(nx.common_neighbors(G_old, u, v)))
-            aa_score = sum(1 / log(G_old.degree(w)) for w in nx.common_neighbors(G_old, u, v))
-            ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
-            clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
-            clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
-            X.append([cn_score, aa_score, ra_score, clu_score, clo_score])
-            if (u, v) in G_new.edges():
-                y.append(1)
-            else:
-                y.append(0)
-
-    if number_of_features == 7:
-        clu_clo_dict = nx.clustering_closure_coefs(G_old)
-        iquad_oquad_dict = nx.iquad_oquad_coefs(G_old)
-        for u, v in possible_links:
-            cn_score = len(list(nx.common_neighbors(G_old, u, v)))
-            aa_score = sum(1 / log(G_old.degree(w)) for w in nx.common_neighbors(G_old, u, v))
-            ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
-            clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
-            clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
-            iquad_score = iquad_oquad_dict[u][0] + iquad_oquad_dict[v][0]
-            oquad_score = iquad_oquad_dict[u][1] + iquad_oquad_dict[v][1]
-            X.append([cn_score, aa_score, ra_score, clu_score, clo_score, iquad_score, oquad_score])
-            if (u, v) in G_new.edges():
-                y.append(1)
-            else:
-                y.append(0)
+    clu_clo_dict = nx.clustering_closure_coefs(G_old)
+    iquad_oquad_dict = nx.iquad_oquad_coefs(G_old)
+    for u, v in possible_links:
+        cn_score = len(list(nx.common_neighbors(G_old, u, v)))
+        aa_score = sum(1 / log(G_old.degree(w)) for w in nx.common_neighbors(G_old, u, v))
+        ra_score = sum(1 / G_old.degree(w) for w in nx.common_neighbors(G_old, u, v))
+        clu_score = clu_clo_dict[u][0] + clu_clo_dict[v][0]
+        clo_score = clu_clo_dict[u][1] + clu_clo_dict[v][1]
+        iquad_score = iquad_oquad_dict[u][0] + iquad_oquad_dict[v][0]
+        oquad_score = iquad_oquad_dict[u][1] + iquad_oquad_dict[v][1]
+        X.append([cn_score, aa_score, ra_score, clu_score, clo_score, iquad_score, oquad_score])
+        if (u, v) in G_new.edges():
+            y.append(1)
+        else:
+            y.append(0)
     return X, y
 
 
