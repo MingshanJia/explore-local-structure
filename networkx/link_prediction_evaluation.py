@@ -17,13 +17,21 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm
 from xgboost import XGBClassifier
 
-__all__ = ['link_predict_supervised_learning', 'get_dataset', 'BFS_sampling',
-           'link_predict_similarity_based', 'undir_link_pred_app', 'link_pred_app',]
-# usage: 1. train_set = nx.get_dataset(G)    2. nx.link_predict_supervised_learning(train_set)
+__all__ = ['link_pred_supervised_learning', 'get_dataset_for_supervised_learning', 'BFS_sampling',
+           'link_pred_similarity_based', 'link_pred_in_precision', 'link_pred_directed_network',]
 
 
-#APP 1
-def link_predict_supervised_learning(dataset, method='xgboost'):
+# compare with 4 feature sets:
+# set 1: 5 baseline features
+# set 2: baseline features + iquad
+# set 3: baseline features + oquad
+# set 4: baseline features + iquad + oquad
+def link_pred_supervised_learning(G, sample_time=5, sample_size=5000, repeat=5, train_pct=0.7, train_old_pct=0.7):
+    dataset = get_dataset_for_supervised_learning(G, sample_time, sample_size, repeat, train_pct, train_old_pct)
+    return perform_link_predict_supervised_learning(dataset)
+
+
+def perform_link_predict_supervised_learning(dataset):
     #positive_ratio = 0
     roc_auc_1 = 0
     roc_auc_2 = 0
@@ -48,7 +56,7 @@ def link_predict_supervised_learning(dataset, method='xgboost'):
     compare_2_to_1 =  (roc_auc_2 - roc_auc_1) * 100 / roc_auc_1
     compare_3_to_1 = (roc_auc_3 - roc_auc_1) * 100 / roc_auc_1
     compare_4_to_1 = (roc_auc_4 - roc_auc_1) * 100 / roc_auc_1
-    print("Model: {}, result in ROC-AUC".format(method))
+    print("Model: XGBoost, result in ROC-AUC")
     print("with baseline features:                   {:.4f}".format(roc_auc_1))
     print("with baseline features + i-quad:          {:.4f}, {:.3f}%".format(roc_auc_2, compare_2_to_1))
     print("with baseline features + o-quad:          {:.4f}, {:.3f}%".format(roc_auc_3, compare_3_to_1))
@@ -62,11 +70,6 @@ def link_predict_supervised_learning(dataset, method='xgboost'):
     return roc_auc_1, [roc_auc_2, compare_2_to_1], [roc_auc_3, compare_3_to_1], [roc_auc_4, compare_4_to_1], feature_importance
 
 
-# compare with 4 feature sets:
-# set 1: 5 baseline features
-# set 2: baseline features + iquad
-# set 3: baseline features + oquad
-# set 4: baseline features + iquad + oquad
 def get_predicts_labels_and_feature_importance(G_train, G_test, G_train_old, G_train_new):
     X_train, y_train = get_data_targets(G_train_old, G_train_new)  # train is on G_train_old + G_train_new
     X_test, y_test = get_data_targets(G_train, G_test)   # test in on G_train + G_test
@@ -115,7 +118,7 @@ def get_data_targets(G_old, G_new):
 # dataset with timestamp: set repeat = 1
 # plit into train and test dataset, then split train set into train_old and train_new in order to fit into the model,
 # and evaluate the model in test set.
-def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, train_pct=0.7, train_old_pct=0.7):
+def get_dataset_for_supervised_learning(G, sample_time=5, sample_size=5000, repeat=5, train_pct=0.7, train_old_pct=0.7):
     dataset = []
     if G.number_of_nodes() > 10000:
         sample = True
@@ -164,7 +167,12 @@ def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, train_pct=0.7, tra
 
 
 # APP2: metrics: ROC-AUC, PR-AUC, Average Precision
-def link_predict_similarity_based(dataset, method = 'cn'):
+def link_pred_similarity_based(G, method = 'cn', sample_size=5000, sample_time=5, repeat=5, old_pct=0.5):
+    dataset = get_dataset_for_similarity_based(G, sample_time, sample_size, repeat, old_pct)
+    return perform_link_pred_similarity_based(dataset, method)
+
+
+def perform_link_pred_similarity_based(dataset, method = 'cn'):
     roc_auc = 0
     pr_auc = 0
     ave_precision = 0
@@ -180,6 +188,7 @@ def link_predict_similarity_based(dataset, method = 'cn'):
     pr_auc /= n
     ave_precision /= n
     print("{} :\nROC-AUC: {};\nPR-AUC: {};\nAve_Precision: {}.".format(method, roc_auc, pr_auc, ave_precision))
+    return roc_auc, pr_auc, ave_precision
 
 
 def get_predicts_and_labels(G_old, G_new, method):
@@ -212,165 +221,111 @@ def get_predict_score(G_old, method):
     return normalized_predicts
 
 
-#obselete APP3: using precision
-def undir_link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
-    res = []
+# APP3: similarity based methods evaluated in precision
+def link_pred_in_precision(G, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5):
+    dataset = get_dataset_for_similarity_based(G, sample_size, sample_time, repeat, old_pct)
     rg = 0  # random guess
     cn = 0
     ra = 0
     cn_clu = 0
     cn_l3 = 0
     cn_l3_norm = 0
-
-    e_all = list(G.edges(data=True))
-
-    if G.number_of_nodes() > 10000:
-        sample = True
-        sample_time = sample_time
-    else:
-        sample = False
-        sample_time = 1
-
-    print('sample time : %d' % sample_time)
-    print('repeat split time: %d' % repeat)
-    print('old edges percentage: %.1f' % old_pct)
-
-    for i in range(0, sample_time):
-        print('sample: %d' % i)
-
-        if sample:
-            G_sampled = BFS_sampling(G, sample_size)
-            e_sampled = list(G_sampled.edges(data=True))
-        else:
-            e_sampled = e_all
-
-        k = round(len(e_sampled) * old_pct)
-        print('k = %d' % k)
-
-        for n in range(0, repeat):
-            print('repeat = %d' % n)
-
-            if repeat == 1:
-                e_sampled = sorted(e_sampled, key=lambda t: t[2].get('sec'))  # for dataset with timestamp
-            else:
-                random.shuffle(e_sampled)
-
-            e_old = e_sampled[: k]
-            e_new = e_sampled[k:]
-            G_old = nx.Graph()
-            G_new = nx.Graph()
-            G_old.add_edges_from(e_old)
-            G_new.add_edges_from(e_new)
-
-            rg += nx.random_guess(G_old, G_new)
-            print('rg: %.3f' % rg)
-            cn += nx.perform_link_prediction_undir(G_old, G_new, 'cn')
-            print('cn: %.3f' % cn)
-            ra += nx.perform_link_prediction_undir(G_old, G_new, 'ra')
-            print('ra: %.3f' % ra)
-            cn_clu += nx.perform_link_prediction_undir(G_old, G_new, 'cn+clu')
-            print('cn+clu: %.3f' % cn_clu)
-            cn_l3 += nx.perform_link_prediction_undir(G_old, G_new, 'cn-l3')
-            print('cn-l3: %.3f' % cn_l3)
-            cn_l3_norm += nx.perform_link_prediction_undir(G_old, G_new, 'cn-l3-norm')
-            print('cn-l3-norm: %.3f' % cn_l3_norm)
-
-    rg /= (repeat * sample_time)
-    cn /= (repeat * sample_time)
-    ra /= (repeat * sample_time)
-    cn_clu /= (repeat * sample_time)
-    cn_l3 /= (repeat * sample_time)
-    cn_l3_norm /= (repeat * sample_time)
-    res.append(rg)
-    res.append(cn)
-    res.append(ra)
-    res.append(cn_clu)
-    res.append(cn_l3)
-    res.append(cn_l3_norm)
-    return res
+    n = len(dataset)
+    for g in tqdm(dataset):
+        rg += nx.random_guess(g[0], g[1])
+        cn += nx.perform_link_prediction_undir(g[0], g[1], 'cn')
+        ra += nx.perform_link_prediction_undir(g[0], g[1], 'ra')
+        cn_clu += nx.perform_link_prediction_undir(g[0], g[1], 'cn+clu')
+        cn_l3 += nx.perform_link_prediction_undir(g[0], g[1], 'cn-l3')
+        cn_l3_norm += nx.perform_link_prediction_undir(g[0], g[1], 'cn-l3-norm')
+    rg /= n
+    cn /= n
+    ra /= n
+    cn_clu /= n
+    cn_l3 /= n
+    cn_l3_norm /= n
+    print('rg: %.3f' % rg)
+    print('cn: %.3f' % cn)
+    print('ra: %.3f' % ra)
+    print('cn+clu: %.3f' % cn_clu)
+    print('cn-l3: %.3f' % cn_l3)
+    print('cn-l3-norm: %.3f' % cn_l3_norm)
+    return rg, cn, ra, cn_clu, cn_l3, cn_l3_norm
 
 
-# when nodes > 10K, sampling.
-# when graph has timestamps, repeat = 1
-def link_pred_app(G, repeat=1, sample_time=10, sample_size=5000, old_pct=0.5):
-    res = []
-    rg = 0 #random guess
+# APP4: link prediction for directed network
+def link_pred_directed_network(G, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5, directed=True):
+    dataset = get_dataset_for_similarity_based(G, sample_size, sample_time, repeat, old_pct, directed)
+    rg = 0
     cn = 0
     aa = 0
     ra = 0
     clo1 = 0
     clo2 = 0
+    n = len(dataset)
+    for g in tqdm(dataset):
+        dict_ce = nx.closure(g[0])
+        rg += nx.random_guess(g[0], g[1])
+        cn += nx.perform_link_prediction(g[0], g[1], 'cn', dict_ce)
+        aa += nx.perform_link_prediction(g[0], g[1], 'aa', dict_ce)
+        ra += nx.perform_link_prediction(g[0], g[1], 'ra', dict_ce)
+        clo1 += nx.perform_link_prediction(g[0], g[1], 'clo1', dict_ce)
+        clo2 += nx.perform_link_prediction(g[0], g[1], 'clo2', dict_ce)
+    rg /= n
+    cn /= n
+    aa /= n
+    ra /= n
+    clo1 /= n
+    clo2 /= n
+    print('rg: %.3f' % rg)
+    print('cn: %.3f' % cn)
+    print('aa: %.3f' % aa)
+    print('ra: %.3f' % ra)
+    print('clo1: %.3f' % clo1)
+    print('clo2: %.3f' % clo2)
+    return rg, cn, aa, ra, clo1, clo2
 
-    e_all = list(G.edges(data=True))
 
+def get_dataset_for_similarity_based(G, sample_size=5000, sample_time=5, repeat=5, old_pct=0.5, directed='false'):
+    dataset = []
     if G.number_of_nodes() > 10000:
         sample = True
-        sample_time = sample_time
+        print("sample {} nodes for {} times".format(sample_size, sample_time))
     else:
         sample = False
         sample_time = 1
+        print("no sampling")
 
-    print('sample time : %d' % sample_time)
-    print('repeat split time: %d' % repeat)
-    print('old edges percentage: %.1f' % old_pct)
-           
+    print("old new split time: {}: using {:.2f} % of edges to predict {:.2f} % edges".
+          format(repeat, 100 * old_pct, (100 * (1 - old_pct))))
     for i in range(0, sample_time):
-        print('sample: %d' % i)
-
         if sample:
             G_sampled = BFS_sampling(G, sample_size)
-            e_sampled = list(G_sampled.edges(data=True))
+            all_edges = list(G_sampled.edges(data=True))
         else:
-            e_sampled = e_all
-
-        k = round(len(e_sampled) * old_pct)  
-        print('k = %d' % k)    
+            all_edges = list(G.edges(data=True))
+        k = round(len(all_edges) * old_pct)
 
         for n in range(0, repeat):
-            print('repeat = %d' % n)
-
             if repeat == 1:
-                e_sampled = sorted(e_sampled, key=lambda t: t[2].get('sec'))  # for dataset with timestamp
+                all_edges = sorted(all_edges, key=lambda t: t[2].get('sec'))  # for dataset with timestamp
             else:
-                random.shuffle(e_sampled)
+                random.shuffle(all_edges)
+            if directed:
+                G_old = nx.DiGraph()
+                G_new = nx.DiGraph()
+            else:
+                G_old = nx.Graph()
+                G_new = nx.Graph()
+            old_edges = all_edges[:k]
+            new_edges = all_edges[k:]
+            G_old.add_edges_from(old_edges)
+            G_new.add_edges_from(new_edges)
+            G_new = G_new.subgraph(G_old.nodes())
 
-            e_old = e_sampled[: k]
-            e_new = e_sampled[k:]
-            G_old = nx.DiGraph()
-            G_new = nx.DiGraph()
-            G_old.add_edges_from(e_old)
-            G_new.add_edges_from(e_new)
-
-            dict_ce = nx.closure(G_old)
-
-            rg += nx.random_guess(G_old, G_new)
-            print('rg: %.3f' % (rg))
-            cn += nx.perform_link_prediction(G_old, G_new, 'cn', dict_ce)
-            print('cn: %.3f' % (cn))
-            aa += nx.perform_link_prediction(G_old, G_new, 'aa', dict_ce)
-            print('aa: %.3f' % (aa))
-            ra += nx.perform_link_prediction(G_old, G_new, 'ra', dict_ce)
-            print('ra: %.3f' % (ra))
-            clo1 += nx.perform_link_prediction(G_old, G_new, 'clo1', dict_ce)
-            print('clo1: %.3f' % (clo1))
-            clo2 += nx.perform_link_prediction(G_old, G_new, 'clo2', dict_ce)
-            print('clo2: %.3f' % (clo2))
-
-    rg /= (repeat * sample_time)
-    cn /= (repeat * sample_time)
-    aa /= (repeat * sample_time)
-    ra /= (repeat * sample_time)
-    clo1 /= (repeat * sample_time)
-    clo2 /= (repeat * sample_time)
-
-    res.append(rg)
-    res.append(cn)
-    res.append(aa)
-    res.append(ra)
-    res.append(clo1)
-    res.append(clo2)
-    return res
-
+            dataset.append([G_old, G_new])
+    print("Number of dataset: {}".format(sample_time * repeat))
+    return dataset
 
 # get sample graph
 def BFS_sampling(G, sample_size=2000):
