@@ -33,7 +33,7 @@ def link_predict_supervised_learning(dataset, method='xgboost'):
     n = len(dataset)
     for g in tqdm(dataset):
         #positive_ratio += g[1].number_of_edges() / len(list(nx.non_edges(g[0])))
-        y_test, score_1, score_2, score_3, score_4, feature_importance_g = get_predicts_labels_and_feature_importance(g[0], g[1], g[2], g[3], method)
+        y_test, score_1, score_2, score_3, score_4, feature_importance_g = get_predicts_labels_and_feature_importance(g[0], g[1], g[2], g[3])
         roc_auc_1 += roc_auc_score(y_test, score_1)
         roc_auc_2 += roc_auc_score(y_test, score_2)
         roc_auc_3 += roc_auc_score(y_test, score_3)
@@ -45,18 +45,21 @@ def link_predict_supervised_learning(dataset, method='xgboost'):
     roc_auc_3 /= n
     roc_auc_4 /= n
     feature_importance /= n
+    compare_2_to_1 =  (roc_auc_2 - roc_auc_1) * 100 / roc_auc_1
+    compare_3_to_1 = (roc_auc_3 - roc_auc_1) * 100 / roc_auc_1
+    compare_4_to_1 = (roc_auc_4 - roc_auc_1) * 100 / roc_auc_1
     print("Model: {}, result in ROC-AUC".format(method))
-    print("with baseline features:                   {}".format(roc_auc_1))
-    print("with baseline features + i-quad:          {}".format(roc_auc_2))
-    print("with baseline features + o-quad:          {}".format(roc_auc_3))
-    print("with baseline features + i-quad + o-quad: {}".format(roc_auc_4))
+    print("with baseline features:                   {:.4f}".format(roc_auc_1))
+    print("with baseline features + i-quad:          {:.4f}, {:.3f}%".format(roc_auc_2, compare_2_to_1))
+    print("with baseline features + o-quad:          {:.4f}, {:.3f}%".format(roc_auc_3, compare_3_to_1))
+    print("with baseline features + i-quad + o-quad: {:.4f}, {:.3f}%".format(roc_auc_4, compare_4_to_1))
 
     features = ['cn', 'aa', 'ra', 'clu', 'clo', 'i-quad', 'o-quad']
     plt.bar(features, feature_importance)
     plt.show()
     for feature, score in zip(features, feature_importance):
         print(feature, score)
-    return roc_auc_1, roc_auc_2, roc_auc_3, roc_auc_4, feature_importance
+    return roc_auc_1, [roc_auc_2, compare_2_to_1], [roc_auc_3, compare_3_to_1], [roc_auc_4, compare_4_to_1], feature_importance
 
 
 # compare with 4 feature sets:
@@ -64,7 +67,7 @@ def link_predict_supervised_learning(dataset, method='xgboost'):
 # set 2: baseline features + iquad
 # set 3: baseline features + oquad
 # set 4: baseline features + iquad + oquad
-def get_predicts_labels_and_feature_importance(G_train, G_test, G_train_old, G_train_new, method):
+def get_predicts_labels_and_feature_importance(G_train, G_test, G_train_old, G_train_new):
     X_train, y_train = get_data_targets(G_train_old, G_train_new)  # train is on G_train_old + G_train_new
     X_test, y_test = get_data_targets(G_train, G_test)   # test in on G_train + G_test
     X_train = normalize(X_train)
