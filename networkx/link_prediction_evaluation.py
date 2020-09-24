@@ -26,12 +26,8 @@ __all__ = ['link_pred_supervised_learning', 'get_dataset_for_supervised_learning
 # set 2: baseline features + iquad
 # set 3: baseline features + oquad
 # set 4: baseline features + iquad + oquad
-def link_pred_supervised_learning(G, sample_time=5, sample_size=5000, repeat=5, train_pct=0.7, train_old_pct=0.7):
+def link_pred_supervised_learning(G, sample_size=5000, sample_time=5, repeat=10, train_pct=0.7, train_old_pct=0.7):
     dataset = get_dataset_for_supervised_learning(G, sample_time, sample_size, repeat, train_pct, train_old_pct)
-    return perform_link_predict_supervised_learning(dataset)
-
-
-def perform_link_predict_supervised_learning(dataset):
     #positive_ratio = 0
     roc_auc_1 = 0
     roc_auc_2 = 0
@@ -167,12 +163,8 @@ def get_dataset_for_supervised_learning(G, sample_time=5, sample_size=5000, repe
 
 
 # APP2: metrics: ROC-AUC, PR-AUC, Average Precision
-def link_pred_similarity_based(G, method = 'cn', sample_size=5000, sample_time=5, repeat=5, old_pct=0.5):
-    dataset = get_dataset_for_similarity_based(G, sample_time, sample_size, repeat, old_pct)
-    return perform_link_pred_similarity_based(dataset, method)
-
-
-def perform_link_pred_similarity_based(dataset, method = 'cn'):
+def link_pred_similarity_based(G, method='cn', sample_size=5000, sample_time=5, repeat=10, old_pct=0.5):
+    dataset = get_dataset_for_similarity_based(G, sample_size, sample_time, repeat, old_pct)
     roc_auc = 0
     pr_auc = 0
     ave_precision = 0
@@ -183,7 +175,6 @@ def perform_link_pred_similarity_based(dataset, method = 'cn'):
         roc_auc += roc_auc_score(label_all, score_all)
         pr_auc += auc(recall, precision)
         ave_precision += average_precision_score(label_all, score_all)
-
     roc_auc /= n
     pr_auc /= n
     ave_precision /= n
@@ -215,15 +206,14 @@ def get_predict_score(G_old, method):
         predicts = nx.common_neighbor_l3_index(G_old)
     if method == 'cn-l3-norm':
         predicts = nx.common_neighbor_l3_degree_normalized_index(G_old)
-
     max_score = max(predicts, key=itemgetter(2))[2]
     normalized_predicts = [(i[0], i[1], i[2] / max_score) for i in predicts]
     return normalized_predicts
 
 
 # APP3: similarity based methods evaluated in precision
-def link_pred_in_precision(G, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5):
-    dataset = get_dataset_for_similarity_based(G, sample_size, sample_time, repeat, old_pct)
+def link_pred_in_precision(G, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5, directed=False):
+    dataset = get_dataset_for_similarity_based(G, sample_size, sample_time, repeat, old_pct, directed)
     rg = 0  # random guess
     cn = 0
     ra = 0
@@ -286,7 +276,7 @@ def link_pred_directed_network(G, sample_size=5000, sample_time=10, repeat=10, o
     return rg, cn, aa, ra, clo1, clo2
 
 
-def get_dataset_for_similarity_based(G, sample_size=5000, sample_time=5, repeat=5, old_pct=0.5, directed='false'):
+def get_dataset_for_similarity_based(G, sample_size=5000, sample_time=5, repeat=5, old_pct=0.5, directed=False):
     dataset = []
     if G.number_of_nodes() > 10000:
         sample = True
