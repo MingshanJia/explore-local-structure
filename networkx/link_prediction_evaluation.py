@@ -17,7 +17,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn import svm
 from xgboost import XGBClassifier
 
-__all__ = ['link_pred_supervised_learning', 'get_dataset_for_supervised_learning', 'BFS_sampling',
+__all__ = ['link_pred_supervised_learning', 'get_dataset', 'BFS_sampling',
            'link_pred_similarity_based', 'link_pred_in_precision', 'link_pred_directed_network',]
 
 
@@ -27,7 +27,7 @@ __all__ = ['link_pred_supervised_learning', 'get_dataset_for_supervised_learning
 # set 3: baseline features + oquad
 # set 4: baseline features + iquad + oquad
 def link_pred_supervised_learning(G, sample_size=5000, sample_time=5, repeat=10, train_pct=0.7, train_old_pct=0.7):
-    dataset = get_dataset_for_supervised_learning(G, sample_time, sample_size, repeat, train_pct, train_old_pct)
+    dataset = get_dataset(G, sample_time, sample_size, repeat, train_pct, train_old_pct, supervised=True, directed=False)
     #positive_ratio = 0
     roc_auc_1 = 0
     roc_auc_2 = 0
@@ -114,7 +114,7 @@ def get_data_targets(G_old, G_new):
 # dataset with timestamp: set repeat = 1
 # plit into train and test dataset, then split train set into train_old and train_new in order to fit into the model,
 # and evaluate the model in test set.
-def get_dataset_for_supervised_learning(G, sample_time=5, sample_size=5000, repeat=5, train_pct=0.7, train_old_pct=0.7):
+def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, train_pct=0.7, train_old_pct=0.7, supervised=True, directed=False):
     dataset = []
     if G.number_of_nodes() > 10000:
         sample = True
@@ -133,7 +133,6 @@ def get_dataset_for_supervised_learning(G, sample_time=5, sample_size=5000, repe
         else:
             all_edges = list(G.edges(data=True))
         k = round(len(all_edges) * train_pct)
-        l = round(k * train_old_pct)
 
         for n in range(0, repeat):
             if repeat == 1:
@@ -141,30 +140,41 @@ def get_dataset_for_supervised_learning(G, sample_time=5, sample_size=5000, repe
             else:
                 random.shuffle(all_edges)
 
-            G_train = nx.Graph()
-            G_test = nx.Graph()
+            if not directed:
+                G_train = nx.Graph()
+                G_test = nx.Graph()
+            else:
+                G_train = nx.DiGraph()
+                G_test = nx.DiGraph()
             train_edges = all_edges[:k]
             test_edges = all_edges[k:]
             G_train.add_edges_from(train_edges)
             G_test.add_edges_from(test_edges)
             G_test = G_test.subgraph(G_train.nodes())
 
-            G_train_old = nx.Graph()
-            G_train_new = nx.Graph()
-            train_old_edges = train_edges[:l]
-            train_new_edges = train_edges[l:]
-            G_train_old.add_edges_from(train_old_edges)
-            G_train_new.add_edges_from(train_new_edges)
-            G_train_new = G_train_new.subgraph(G_train_old.nodes())
-
-            dataset.append([G_train, G_test, G_train_old, G_train_new])
+            if supervised:
+                l = round(k * train_old_pct)
+                if not directed:
+                    G_train_old = nx.Graph()
+                    G_train_new = nx.Graph()
+                else:
+                    G_train_old = nx.DiGraph()
+                    G_train_new = nx.DiGraph()
+                train_old_edges = train_edges[:l]
+                train_new_edges = train_edges[l:]
+                G_train_old.add_edges_from(train_old_edges)
+                G_train_new.add_edges_from(train_new_edges)
+                G_train_new = G_train_new.subgraph(G_train_old.nodes())
+                dataset.append([G_train, G_test, G_train_old, G_train_new])
+            else:
+                dataset.append([G_train, G_test])
     print("Number of dataset: {}".format(sample_time * repeat))
     return dataset
 
 
 # APP2: metrics: ROC-AUC, PR-AUC, Average Precision
 def link_pred_similarity_based(G, method='cn', sample_size=5000, sample_time=5, repeat=10, old_pct=0.5):
-    dataset = get_dataset_for_similarity_based(G, sample_size, sample_time, repeat, old_pct)
+    dataset = get_dataset(G, sample_size, sample_time, repeat, old_pct,supervised=False, directed=False)
     roc_auc = 0
     pr_auc = 0
     ave_precision = 0
@@ -212,8 +222,8 @@ def get_predict_score(G_old, method):
 
 
 # APP3: similarity based methods evaluated in precision
-def link_pred_in_precision(G, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5, directed=False):
-    dataset = get_dataset_for_similarity_based(G, sample_size, sample_time, repeat, old_pct, directed)
+def link_pred_in_precision(G, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5):
+    dataset = get_dataset(G, sample_size, sample_time, repeat, old_pct, supervised=False, directed=False)
     rg = 0  # random guess
     cn = 0
     ra = 0
@@ -244,8 +254,8 @@ def link_pred_in_precision(G, sample_size=5000, sample_time=10, repeat=10, old_p
 
 
 # APP4: link prediction for directed network
-def link_pred_directed_network(G, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5, directed=True):
-    dataset = get_dataset_for_similarity_based(G, sample_size, sample_time, repeat, old_pct, directed)
+def link_pred_directed_network(G, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5):
+    dataset = get_dataset(G, sample_size, sample_time, repeat, old_pct, supervised=False, directed=True)
     rg = 0
     cn = 0
     aa = 0
@@ -275,47 +285,6 @@ def link_pred_directed_network(G, sample_size=5000, sample_time=10, repeat=10, o
     print('clo2: %.3f' % clo2)
     return rg, cn, aa, ra, clo1, clo2
 
-
-def get_dataset_for_similarity_based(G, sample_size=5000, sample_time=5, repeat=5, old_pct=0.5, directed=False):
-    dataset = []
-    if G.number_of_nodes() > 10000:
-        sample = True
-        print("sample {} nodes for {} times".format(sample_size, sample_time))
-    else:
-        sample = False
-        sample_time = 1
-        print("no sampling")
-
-    print("old new split time: {}: using {:.2f} % of edges to predict {:.2f} % edges".
-          format(repeat, 100 * old_pct, (100 * (1 - old_pct))))
-    for i in range(0, sample_time):
-        if sample:
-            G_sampled = BFS_sampling(G, sample_size)
-            all_edges = list(G_sampled.edges(data=True))
-        else:
-            all_edges = list(G.edges(data=True))
-        k = round(len(all_edges) * old_pct)
-
-        for n in range(0, repeat):
-            if repeat == 1:
-                all_edges = sorted(all_edges, key=lambda t: t[2].get('sec'))  # for dataset with timestamp
-            else:
-                random.shuffle(all_edges)
-            if directed:
-                G_old = nx.DiGraph()
-                G_new = nx.DiGraph()
-            else:
-                G_old = nx.Graph()
-                G_new = nx.Graph()
-            old_edges = all_edges[:k]
-            new_edges = all_edges[k:]
-            G_old.add_edges_from(old_edges)
-            G_new.add_edges_from(new_edges)
-            G_new = G_new.subgraph(G_old.nodes())
-
-            dataset.append([G_old, G_new])
-    print("Number of dataset: {}".format(sample_time * repeat))
-    return dataset
 
 # get sample graph
 def BFS_sampling(G, sample_size=2000):

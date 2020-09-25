@@ -2,17 +2,6 @@ import networkx as nx
 
 __all__ = ['degree_coefs_corr', 'get_four_coefs', 'closeness_coefs_corr']
 
-#TODO: finish this
-def get_network_info(G, weight = None):
-    n = G.number_of_nodes()
-    m = G.number_of_edges()
-    k = m / n
-    cc = nx.average_clustering(G, weight)
-    ce = nx.average_closure(G, weight)
-
-    res = [n, m, k, cc, ce]
-    return res
-
 
 # if the last chunk is less than bin width, add it to the second to last bin
 def chunks(lst, n):
@@ -40,8 +29,7 @@ def degree_coefs_corr(G):
         avg_degree = sum(d for _, d in one_bin) / len(one_bin)
         avg_clustering = nx.average_clustering(G, node_list)
         avg_closure = nx.average_closure(G, node_list)
-        avg_iquad = nx.average_inner_quad_co(G, node_list)
-        avg_oquad = nx.average_outer_quad_co(G, node_list)
+        avg_iquad, avg_oquad = nx.average_inner_and_outer_quad_co(G, node_list)
 
         x.append(avg_degree)
         clu.append(avg_clustering)
@@ -66,8 +54,7 @@ def closeness_coefs_corr(G):
         avg_closeness = sum(d for _, d in one_bin) / len(one_bin)
         avg_clustering = nx.average_clustering(G, node_list)
         avg_closure = nx.average_closure(G, node_list)
-        avg_iquad = nx.average_inner_quad_co(G, node_list)
-        avg_oquad = nx.average_outer_quad_co(G, node_list)
+        avg_iquad, avg_oquad = nx.average_inner_and_outer_quad_co(G, node_list)
 
         x.append(avg_closeness)
         clu.append(avg_clustering)
@@ -80,10 +67,13 @@ def closeness_coefs_corr(G):
 def get_four_coefs(G):
     clu = nx.clustering(G).values()
     clo = nx.closure(G)
-    list_clo = []
-    for k, v in clo.items():
-        list_clo.append(v[0])
-    list_clo
-    iquad = nx.inner_quadrangle_coefficient(G).values()
-    oquad = nx.outer_quadrangle_coefficient(G).values()
-    return list(clu), list_clo, list(iquad), list(oquad)
+    iquad_oquad = nx.iquad_oquad_coefs(G)
+    clo_list = []
+    iquad_list = []
+    oquad_list = []
+    for v in clo.values():
+        clo_list.append(v[0])
+    for v in iquad_oquad.values():
+        iquad_list.append(v[0])
+        oquad_list.append(v[1])
+    return list(clu), clo_list, iquad_list, oquad_list
