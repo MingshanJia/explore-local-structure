@@ -26,47 +26,70 @@ __all__ = ['link_pred_supervised_learning', 'get_dataset', 'BFS_sampling',
 # set 2: baseline features + iquad
 # set 3: baseline features + oquad
 # set 4: baseline features + iquad + oquad
-def link_pred_supervised_learning(G, sample_size=5000, sample_time=5, repeat=10, train_pct=0.7, train_old_pct=0.7):
+def link_pred_supervised_learning(G, method="xgboost", sample_size=3000, sample_time=5, repeat=10, train_pct=0.7, train_old_pct=0.7):
     dataset = get_dataset(G, sample_time, sample_size, repeat, train_pct, train_old_pct, supervised=True, directed=False)
     #positive_ratio = 0
-    roc_auc_1 = 0
-    roc_auc_2 = 0
-    roc_auc_3 = 0
-    roc_auc_4 = 0
+    train_roc_auc_1 = 0
+    train_roc_auc_2 = 0
+    train_roc_auc_3 = 0
+    train_roc_auc_4 = 0
+    test_roc_auc_1 = 0
+    test_roc_auc_2 = 0
+    test_roc_auc_3 = 0
+    test_roc_auc_4 = 0
     feature_importance = np.zeros(7)
     n = len(dataset)
     for g in tqdm(dataset):
         #positive_ratio += g[1].number_of_edges() / len(list(nx.non_edges(g[0])))
-        y_test, score_1, score_2, score_3, score_4, feature_importance_g = get_predicts_labels_and_feature_importance(g[0], g[1], g[2], g[3])
-        roc_auc_1 += roc_auc_score(y_test, score_1)
-        roc_auc_2 += roc_auc_score(y_test, score_2)
-        roc_auc_3 += roc_auc_score(y_test, score_3)
-        roc_auc_4 += roc_auc_score(y_test, score_4)
+        y_train, train_score_1, train_score_2, train_score_3, train_score_4, \
+        y_test, test_score_1, test_score_2, test_score_3, test_score_4, feature_importance_g \
+            = get_predicts_labels_and_feature_importance(method, g[0], g[1], g[2], g[3])
+        train_roc_auc_1 += roc_auc_score(y_train, train_score_1)
+        train_roc_auc_2 += roc_auc_score(y_train, train_score_2)
+        train_roc_auc_3 += roc_auc_score(y_train, train_score_3)
+        train_roc_auc_4 += roc_auc_score(y_train, train_score_4)
+        test_roc_auc_1 += roc_auc_score(y_test, test_score_1)
+        test_roc_auc_2 += roc_auc_score(y_test, test_score_2)
+        test_roc_auc_3 += roc_auc_score(y_test, test_score_3)
+        test_roc_auc_4 += roc_auc_score(y_test, test_score_4)
         feature_importance += feature_importance_g
     #positive_ratio /= n
-    roc_auc_1 /= n
-    roc_auc_2 /= n
-    roc_auc_3 /= n
-    roc_auc_4 /= n
+    train_roc_auc_1 /= n
+    train_roc_auc_2 /= n
+    train_roc_auc_3 /= n
+    train_roc_auc_4 /= n
+    test_roc_auc_1 /= n
+    test_roc_auc_2 /= n
+    test_roc_auc_3 /= n
+    test_roc_auc_4 /= n
     feature_importance /= n
-    compare_2_to_1 =  (roc_auc_2 - roc_auc_1) * 100 / roc_auc_1
-    compare_3_to_1 = (roc_auc_3 - roc_auc_1) * 100 / roc_auc_1
-    compare_4_to_1 = (roc_auc_4 - roc_auc_1) * 100 / roc_auc_1
-    print("Model: XGBoost, result in ROC-AUC")
-    print("with baseline features:                   {:.4f}".format(roc_auc_1))
-    print("with baseline features + i-quad:          {:.4f}, {:.3f}%".format(roc_auc_2, compare_2_to_1))
-    print("with baseline features + o-quad:          {:.4f}, {:.3f}%".format(roc_auc_3, compare_3_to_1))
-    print("with baseline features + i-quad + o-quad: {:.4f}, {:.3f}%".format(roc_auc_4, compare_4_to_1))
-
+    train_compare_2_to_1 =  (train_roc_auc_2 - train_roc_auc_1) * 100 / train_roc_auc_1
+    train_compare_3_to_1 = (train_roc_auc_3 - train_roc_auc_1) * 100 / train_roc_auc_1
+    train_compare_4_to_1 = (train_roc_auc_4 - train_roc_auc_1) * 100 / train_roc_auc_1
+    test_compare_2_to_1 =  (test_roc_auc_2 - test_roc_auc_1) * 100 / test_roc_auc_1
+    test_compare_3_to_1 = (test_roc_auc_3 - test_roc_auc_1) * 100 / test_roc_auc_1
+    test_compare_4_to_1 = (test_roc_auc_4 - test_roc_auc_1) * 100 / test_roc_auc_1
+    print("Model: {}, result in ROC-AUC".format(method))
+    print("Train result:")
+    print("  with baseline features:                   {:.4f}".format(train_roc_auc_1))
+    print("  with baseline features + i-quad:          {:.4f}, {:.3f}%".format(train_roc_auc_2, train_compare_2_to_1))
+    print("  with baseline features + o-quad:          {:.4f}, {:.3f}%".format(train_roc_auc_3, train_compare_3_to_1))
+    print("  with baseline features + i-quad + o-quad: {:.4f}, {:.3f}%".format(train_roc_auc_4, train_compare_4_to_1))
+    print("Test result:")
+    print("  with baseline features:                   {:.4f}".format(test_roc_auc_1))
+    print("  with baseline features + i-quad:          {:.4f}, {:.3f}%".format(test_roc_auc_2, test_compare_2_to_1))
+    print("  with baseline features + o-quad:          {:.4f}, {:.3f}%".format(test_roc_auc_3, test_compare_3_to_1))
+    print("  with baseline features + i-quad + o-quad: {:.4f}, {:.3f}%".format(test_roc_auc_4, test_compare_4_to_1))
     features = ['cn', 'aa', 'ra', 'clu', 'clo', 'i-quad', 'o-quad']
     plt.bar(features, feature_importance)
     plt.show()
     for feature, score in zip(features, feature_importance):
         print(feature, score)
-    return roc_auc_1, [roc_auc_2, compare_2_to_1], [roc_auc_3, compare_3_to_1], [roc_auc_4, compare_4_to_1], feature_importance
+    return [train_roc_auc_1, [train_roc_auc_2, train_compare_2_to_1], [train_roc_auc_3, train_compare_3_to_1], [train_roc_auc_4, train_compare_4_to_1]],\
+           [test_roc_auc_1, [test_roc_auc_2, test_compare_2_to_1], [test_roc_auc_3, test_compare_3_to_1], [test_roc_auc_4, test_compare_4_to_1]], feature_importance
 
 
-def get_predicts_labels_and_feature_importance(G_train, G_test, G_train_old, G_train_new):
+def get_predicts_labels_and_feature_importance(method, G_train, G_test, G_train_old, G_train_new):
     X_train, y_train = get_data_targets(G_train_old, G_train_new)  # train is on G_train_old + G_train_new
     X_test, y_test = get_data_targets(G_train, G_test)   # test in on G_train + G_test
     X_train = normalize(X_train)
@@ -74,18 +97,32 @@ def get_predicts_labels_and_feature_importance(G_train, G_test, G_train_old, G_t
     X_train = np.array(X_train)
     X_test = np.array(X_test)
 
-    model = XGBClassifier()
+    if method == "xgboost":
+        model = XGBClassifier()
+    if method == "log-reg":
+        model = LogisticRegression()
+    # baseline features
     model.fit(X_train[:, :5], y_train)
-    score_1 = model.predict_proba(X_test[:, :5])
+    train_score_1 = model.predict_proba(X_train[:, :5])
+    test_score_1 = model.predict_proba(X_test[:, :5])
+    # baseline features + iquad
     model.fit(X_train[:, :6], y_train)
-    score_2 = model.predict_proba(X_test[:, :6])
+    train_score_2 = model.predict_proba(X_train[:, :6])
+    test_score_2 = model.predict_proba(X_test[:, :6])
+    # baseline features + oquad
     model.fit(X_train[:, [0, 1, 2, 3, 4, 6]], y_train)
-    score_3 = model.predict_proba(X_test[:, [0, 1, 2, 3, 4, 6]])
+    train_score_3 = model.predict_proba(X_train[:, [0, 1, 2, 3, 4, 6]])
+    test_score_3 = model.predict_proba(X_test[:, [0, 1, 2, 3, 4, 6]])
+    # baseline features + iquad + oquad
     model.fit(X_train, y_train)
-    score_4 = model.predict_proba(X_test)
-    importances = model.feature_importances_
-
-    return y_test, score_1[:, 1], score_2[:, 1], score_3[:, 1], score_4[:, 1], importances
+    train_score_4 = model.predict_proba(X_train)
+    test_score_4 = model.predict_proba(X_test)
+    if method == "log-reg":
+        importances = model.coef_[0]
+    else:
+        importances = model.feature_importances_
+    return y_train, train_score_1[:, 1], train_score_2[:, 1], train_score_3[:, 1], train_score_4[:, 1], \
+           y_test,  test_score_1[:, 1],  test_score_2[:, 1],  test_score_3[:, 1],  test_score_4[:, 1],  importances
 
 
 # get data (with all 7 features) and targets
@@ -114,9 +151,9 @@ def get_data_targets(G_old, G_new):
 # dataset with timestamp: set repeat = 1
 # plit into train and test dataset, then split train set into train_old and train_new in order to fit into the model,
 # and evaluate the model in test set.
-def get_dataset(G, sample_time=5, sample_size=5000, repeat=5, train_pct=0.7, train_old_pct=0.7, supervised=True, directed=False):
+def get_dataset(G, sample_time=5, sample_size=3000, repeat=10, train_pct=0.7, train_old_pct=0.7, supervised=True, directed=False):
     dataset = []
-    if G.number_of_nodes() > 10000:
+    if G.number_of_nodes() > 8000:
         sample = True
         print("sample {} nodes for {} times".format(sample_size, sample_time))
     else:
