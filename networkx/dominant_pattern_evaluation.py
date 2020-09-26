@@ -5,14 +5,16 @@ __all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_network_info'
 
 
 # get four coefs.
-def get_network_info(G, weight=None):
+def get_network_info(G, filename, weight=None):
     n = G.number_of_nodes()
     m = G.number_of_edges()
     cc = nx.average_clustering(G, weight=weight)
     ce = nx.average_closure(G, weight=weight)
     iquad, oquad = nx.average_inner_and_outer_quad_co(G, weight=weight)
-
-    res = [n, m, cc, ce, iquad, oquad]
+    res = [n, m, cc, ce, iquad, oquad, iquad/cc, oquad/ce]
+    with open(filename, 'w') as f:
+        for item in res:
+            f.write("%.4f\n" % item)
     return res
 
 
