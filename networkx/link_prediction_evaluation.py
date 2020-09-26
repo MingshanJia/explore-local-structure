@@ -26,7 +26,7 @@ __all__ = ['link_pred_supervised_learning', 'get_dataset', 'BFS_sampling',
 # set 2: baseline features + iquad
 # set 3: baseline features + oquad
 # set 4: baseline features + iquad + oquad
-def link_pred_supervised_learning(G, method="xgboost", sample_size=3000, sample_time=5, repeat=10, train_pct=0.7, train_old_pct=0.7):
+def link_pred_supervised_learning(G, filename, method="xgboost", sample_size=3000, sample_time=5, repeat=10, train_pct=0.7, train_old_pct=0.7):
     dataset = get_dataset(G, sample_time, sample_size, repeat, train_pct, train_old_pct, supervised=True, directed=False)
     #positive_ratio = 0
     train_roc_auc_1 = 0
@@ -85,6 +85,20 @@ def link_pred_supervised_learning(G, method="xgboost", sample_size=3000, sample_
     plt.show()
     for feature, score in zip(features, feature_importance):
         print(feature, score)
+    with open(filename, 'w') as f:
+        f.write("Model: XGBoost, result in ROC-AUC\n")
+        f.write("Train result:\n")
+        f.write("  baseline:             %.4f\n" % train_roc_auc_1)
+        f.write("  baseline+iquad:       %.4f, %.2f\n" % (train_roc_auc_2, train_compare_2_to_1))
+        f.write("  baseline+oquad:       %.4f, %.2f\n" % (train_roc_auc_3, train_compare_3_to_1))
+        f.write("  baseline+iquad+oquad: %.4f, %.2f\n" % (train_roc_auc_4, train_compare_4_to_1))
+        f.write("Test result:\n")
+        f.write("  baseline:             %.4f\n" % test_roc_auc_1)
+        f.write("  baseline+iquad:       %.4f, %.2f\n" % (test_roc_auc_2, test_compare_2_to_1))
+        f.write("  baseline+oquad:       %.4f, %.2f\n" % (test_roc_auc_3, test_compare_3_to_1))
+        f.write("  baseline+iquad+oquad: %.4f, %.2f\n" % (test_roc_auc_4, test_compare_4_to_1))
+        for i in feature_importance:
+            f.write("%.4f " % i)
     return [train_roc_auc_1, [train_roc_auc_2, train_compare_2_to_1], [train_roc_auc_3, train_compare_3_to_1], [train_roc_auc_4, train_compare_4_to_1]],\
            [test_roc_auc_1, [test_roc_auc_2, test_compare_2_to_1], [test_roc_auc_3, test_compare_3_to_1], [test_roc_auc_4, test_compare_4_to_1]], feature_importance
 
