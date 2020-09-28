@@ -5,24 +5,33 @@ __all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_network_info'
 
 
 # get four coefs.
-def get_network_info(G, filename, weight=None):
+def get_network_info(G, filename="", weight=None):
     n = G.number_of_nodes()
     m = G.number_of_edges()
     k = 2 * m / n
     clusering = nx.average_clustering(G, weight=weight)
     closure = nx.average_closure(G, weight=weight)
     iquad, oquad = nx.average_inner_and_outer_quad_co(G, weight=weight)
-    with open(filename, 'w') as f:
-        f.write("|V|:      %d\n" % n)
-        f.write("|E|:      %d\n" % m)
-        f.write("k:        %.2f\n" % k)
-        f.write("clustering: %.3f\n" % clusering)
-        f.write("closure:    %.3f\n" % closure)
-        f.write("i-quad:     %.3f\n" % iquad)
-        f.write("o-quad:     %.3f\n" % oquad)
-        f.write("i-quad/clustering:  %.3f\n" % (iquad/clusering))
-        f.write("o-quad/closure:     %.3f\n" % (oquad/closure))
-    return n, m, k, clusering, closure, iquad, oquad, iquad/clusering, oquad/closure
+    if filename:
+        with open(filename, 'w') as f:
+            f.write("|V|:      %d\n" % n)
+            f.write("|E|:      %d\n" % m)
+            f.write("k:        %.2f\n" % k)
+            f.write("clustering: %.3f\n" % clusering)
+            f.write("closure:    %.3f\n" % closure)
+            f.write("i-quad:     %.3f\n" % iquad)
+            f.write("o-quad:     %.3f\n" % oquad)
+            if oquad > 0:
+                f.write("i-quad/o-quad:  %.3f\n" % (iquad/oquad))
+            if clusering > 0:
+                f.write("i-quad/clustering:  %.3f\n" % (iquad/clusering))
+            if closure > 0:
+                f.write("o-quad/closure:     %.3f\n" % (oquad/closure))
+    res = [n, m, k, clusering, closure, iquad, oquad]
+    res.append(iquad / oquad if oquad > 0 else 0)
+    res.append(iquad / clusering if clusering > 0 else 0)
+    res.append(oquad / closure if closure > 0 else 0)
+    return res
 
 
 def get_key_info(G, weight = None):
