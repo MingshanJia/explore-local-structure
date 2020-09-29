@@ -26,7 +26,7 @@ __all__ = ['link_pred_supervised_learning', 'get_dataset', 'BFS_sampling',
 # set 2: baseline features + iquad
 # set 3: baseline features + oquad
 # set 4: baseline features + iquad + oquad
-def link_pred_supervised_learning(G, filename, method="xgboost", sample_size=3000, sample_time=5, repeat=10, train_pct=0.7, train_old_pct=0.7):
+def link_pred_supervised_learning(G, filename="", method="xgboost", sample_size=3000, sample_time=5, repeat=10, train_pct=0.7, train_old_pct=0.7):
     dataset = get_dataset(G, sample_time, sample_size, repeat, train_pct, train_old_pct, supervised=True, directed=False)
     #positive_ratio = 0
     train_roc_auc_1 = 0
@@ -39,7 +39,9 @@ def link_pred_supervised_learning(G, filename, method="xgboost", sample_size=300
     test_roc_auc_4 = 0
     feature_importance = np.zeros(7)
     n = len(dataset)
+    i = 0
     for g in tqdm(dataset):
+        i = i + 1
         #positive_ratio += g[1].number_of_edges() / len(list(nx.non_edges(g[0])))
         y_train, train_score_1, train_score_2, train_score_3, train_score_4, \
         y_test, test_score_1, test_score_2, test_score_3, test_score_4, feature_importance_g \
@@ -53,6 +55,12 @@ def link_pred_supervised_learning(G, filename, method="xgboost", sample_size=300
         test_roc_auc_3 += roc_auc_score(y_test, test_score_3)
         test_roc_auc_4 += roc_auc_score(y_test, test_score_4)
         feature_importance += feature_importance_g
+        print("Test set result until dataset no.{}:\n"
+              "baseline:              {}\n"
+              "baseline + I(i):       {}\n"
+              "baseline + O(i):       {}\n"
+              "baseline + I(i) + O(i):{}\n".
+              format(i, test_roc_auc_1/i, test_roc_auc_2/i, test_roc_auc_3/i, test_roc_auc_4/i))
     #positive_ratio /= n
     train_roc_auc_1 /= n
     train_roc_auc_2 /= n
@@ -85,20 +93,21 @@ def link_pred_supervised_learning(G, filename, method="xgboost", sample_size=300
     plt.show()
     for feature, score in zip(features, feature_importance):
         print(feature, score)
-    with open(filename, 'w') as f:
-        f.write("Model: XGBoost, result in ROC-AUC\n")
-        f.write("Train result:\n")
-        f.write("  baseline:             %.4f\n" % train_roc_auc_1)
-        f.write("  baseline+iquad:       %.4f, %.2f%%\n" % (train_roc_auc_2, train_compare_2_to_1))
-        f.write("  baseline+oquad:       %.4f, %.2f%%\n" % (train_roc_auc_3, train_compare_3_to_1))
-        f.write("  baseline+iquad+oquad: %.4f, %.2f%%\n" % (train_roc_auc_4, train_compare_4_to_1))
-        f.write("Test result:\n")
-        f.write("  baseline:             %.4f\n" % test_roc_auc_1)
-        f.write("  baseline+iquad:       %.4f, %.2f%%\n" % (test_roc_auc_2, test_compare_2_to_1))
-        f.write("  baseline+oquad:       %.4f, %.2f%%\n" % (test_roc_auc_3, test_compare_3_to_1))
-        f.write("  baseline+iquad+oquad: %.4f, %.2f%%\n" % (test_roc_auc_4, test_compare_4_to_1))
-        for i in feature_importance:
-            f.write("%.4f " % i)
+    if filename:
+        with open(filename, 'w') as f:
+            f.write("Model: XGBoost, result in ROC-AUC\n")
+            f.write("Train result:\n")
+            f.write("  baseline:             %.4f\n" % train_roc_auc_1)
+            f.write("  baseline+iquad:       %.4f, %.2f%%\n" % (train_roc_auc_2, train_compare_2_to_1))
+            f.write("  baseline+oquad:       %.4f, %.2f%%\n" % (train_roc_auc_3, train_compare_3_to_1))
+            f.write("  baseline+iquad+oquad: %.4f, %.2f%%\n" % (train_roc_auc_4, train_compare_4_to_1))
+            f.write("Test result:\n")
+            f.write("  baseline:             %.4f\n" % test_roc_auc_1)
+            f.write("  baseline+iquad:       %.4f, %.2f%%\n" % (test_roc_auc_2, test_compare_2_to_1))
+            f.write("  baseline+oquad:       %.4f, %.2f%%\n" % (test_roc_auc_3, test_compare_3_to_1))
+            f.write("  baseline+iquad+oquad: %.4f, %.2f%%\n" % (test_roc_auc_4, test_compare_4_to_1))
+            for i in feature_importance:
+                f.write("%.4f " % i)
     return [train_roc_auc_1, [train_roc_auc_2, train_compare_2_to_1], [train_roc_auc_3, train_compare_3_to_1], [train_roc_auc_4, train_compare_4_to_1]],\
            [test_roc_auc_1, [test_roc_auc_2, test_compare_2_to_1], [test_roc_auc_3, test_compare_3_to_1], [test_roc_auc_4, test_compare_4_to_1]], feature_importance
 
