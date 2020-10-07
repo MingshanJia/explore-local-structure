@@ -21,16 +21,21 @@ def get_network_info(G, filename="", weight=None):
             f.write("closure:    %.3f\n" % closure)
             f.write("i-quad:     %.3f\n" % iquad)
             f.write("o-quad:     %.3f\n" % oquad)
+            if closure > 0:
+                f.write("clustering/closure: %.3f\n" % (clusering/closure))
             if oquad > 0:
-                f.write("i-quad/o-quad:  %.3f\n" % (iquad/oquad))
+                f.write("i-quad/o-quad:      %.3f\n" % (iquad/oquad))
             if clusering > 0:
                 f.write("i-quad/clustering:  %.3f\n" % (iquad/clusering))
             if closure > 0:
                 f.write("o-quad/closure:     %.3f\n" % (oquad/closure))
     res = [n, m, k, clusering, closure, iquad, oquad]
-    res.append(iquad / oquad if oquad > 0 else 0)
-    res.append(iquad / clusering if clusering > 0 else 0)
-    res.append(oquad / closure if closure > 0 else 0)
+    signatures = []
+    signatures.append(clusering / closure if closure > 0 else 0)
+    signatures.append(iquad / oquad if oquad > 0 else 0)
+    signatures.append(iquad / clusering if clusering > 0 else 0)
+    signatures.append(oquad / closure if closure > 0 else 0)
+    res.append(signatures)
     return res
 
 
