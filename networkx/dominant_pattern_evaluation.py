@@ -30,12 +30,10 @@ def get_network_info(G, filename="", weight=None):
             if closure > 0:
                 f.write("o-quad/closure:     %.3f\n" % (oquad/closure))
     res = [n, m, k, clusering, closure, iquad, oquad]
-    signatures = []
-    signatures.append(clusering / closure if closure > 0 else 0)
-    signatures.append(iquad / oquad if oquad > 0 else 0)
-    signatures.append(iquad / clusering if clusering > 0 else 0)
-    signatures.append(oquad / closure if closure > 0 else 0)
-    res.append(signatures)
+    res.append(clusering / closure if closure > 0 else 0)
+    res.append(iquad / oquad if oquad > 0 else 0)
+    res.append(iquad / clusering if clusering > 0 else 0)
+    res.append(oquad / closure if closure > 0 else 0)
     return res
 
 
