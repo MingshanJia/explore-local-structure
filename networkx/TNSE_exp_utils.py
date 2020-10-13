@@ -1,7 +1,7 @@
 import networkx as nx
 import pandas as pd
 
-__all__ = ['degree_coefs_corr', 'get_four_coefs', 'closeness_coefs_corr', 'get_feature_score']
+__all__ = ['degree_coefs_corr', 'get_four_coefs', 'closeness_coefs_corr', 'get_feature_score', 'get_iquad_wiquad_df', 'get_oquad_woquad_df']
 
 
 # if the last chunk is less than bin width, add it to the second to last bin
