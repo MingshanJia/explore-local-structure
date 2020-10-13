@@ -1,6 +1,7 @@
 import networkx as nx
+import pandas as pd
 
-__all__ = ['degree_coefs_corr', 'get_four_coefs', 'closeness_coefs_corr']
+__all__ = ['degree_coefs_corr', 'get_four_coefs', 'closeness_coefs_corr', 'get_feature_score']
 
 
 # if the last chunk is less than bin width, add it to the second to last bin
@@ -77,3 +78,44 @@ def get_four_coefs(G):
         iquad_list.append(v[0])
         oquad_list.append(v[1])
     return list(clu), clo_list, iquad_list, oquad_list
+
+
+def get_feature_score(filename):
+    with open(filename,"r") as fi:
+        res_string = []
+        for ln in fi:
+            if ln.startswith("0"):
+                fields = ln.split(" ")
+                for item in fields:
+                    res_string.append(item)
+    res = []
+    for i in res_string[:7]:
+        res.append(float(i))
+    return res
+
+
+def get_iquad_wiquad_df(G):
+    iquad = nx.inner_quadrangle_coefficient(G, weight = None)
+    wiquad = nx.inner_quadrangle_coefficient(G, weight = 'weight')
+    node_iquad_wiquad = []
+    for k, v1, v2 in common_entries(iquad, wiquad):
+        node_iquad_wiquad.append([k, v1, v2])
+    node_iquad_wiquad = sorted(node_iquad_wiquad, key=lambda t:t[1])
+    node_iquad_wiquad = pd.DataFrame(node_iquad_wiquad, columns=['node-id','i-quad', 'weighted-i-quad'])
+    return node_iquad_wiquad
+
+
+def get_oquad_woquad_df(G):
+    oquad = nx.outer_quadrangle_coefficient(G, weight = None)
+    woquad = nx.outer_quadrangle_coefficient(G, weight = 'weight')
+    node_oquad_woquad = []
+    for k, v1, v2 in common_entries(oquad, woquad):
+        node_oquad_woquad.append([k, v1, v2])
+    node_oquad_woquad = sorted(node_oquad_woquad, key=lambda t:t[1])
+    node_oquad_woquad = pd.DataFrame(node_oquad_woquad, columns=['node-id','o-quad', 'weighted-o-quad'])
+    return node_oquad_woquad
+
+
+def common_entries(*dcts):
+    for i in set(dcts[0]).intersection(*dcts[1:]):
+        yield (i,) + tuple(d[i] for d in dcts)
