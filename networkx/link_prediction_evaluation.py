@@ -123,7 +123,7 @@ def get_predicts_labels_and_feature_importance(method, G_train, G_test, G_train_
     X_test = np.array(X_test)
 
     if method == "xgboost":
-        model = XGBClassifier()
+        model = XGBClassifier(max_depth=3)
     if method == "log-reg":
         model = LogisticRegression()
     # baseline features
@@ -178,7 +178,7 @@ def get_data_targets(G_old, G_new):
 # and evaluate the model in test set.
 def get_dataset(G, sample_time=5, sample_size=3000, repeat=10, train_pct=0.7, train_old_pct=0.7, supervised=True, directed=False):
     dataset = []
-    if G.number_of_nodes() > 8000:
+    if G.number_of_nodes() > 10000:
         sample = True
         print("sample {} nodes for {} times".format(sample_size, sample_time))
     else:

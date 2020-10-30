@@ -5,8 +5,8 @@ import networkx as nx
 
 from networkx.utils import not_implemented_for
 
-__all__ = ['quadrangle_coefficient_iter', 'global_quadrangle', 'number_of_quadrangles',
-           'square_clustering', 'quadrangle_coefficient', 'inner_quadrangle_coefficient','outer_quadrangle_coefficient',
+__all__ = ['quadrangle_coefficient_iter', 'global_quadrangle', 'number_of_quadrangles', 'square_clustering', 'order_two_clustering',
+           'square_clustering_2', 'quadrangle_coefficient', 'inner_quadrangle_coefficient','outer_quadrangle_coefficient',
            'iquad_oquad_coefs','quad_iquad_oquad', 'average_inner_quad_co', 'average_outer_quad_co', 'average_inner_and_outer_quad_co']
 
 
@@ -339,7 +339,7 @@ def quadrangle_coefficient(G, nodes=None):
     return clustering
 
 
-def square_clustering(G, nodes=None):
+def square_clustering_2(G, nodes=None):
     r""" Compute the squares clustering coefficient for nodes.
 
     Parameters
@@ -400,3 +400,54 @@ def square_clustering(G, nodes=None):
         # Return the value of the sole entry in the dictionary.
         return clustering[nodes]
     return clustering
+
+
+def square_clustering(G, nodes=None):
+
+    if nodes is None:
+        node_iter = G
+    else:
+        node_iter = G.nbunch_iter(nodes)
+    clustering = {}
+    for v in node_iter:
+        clustering[v] = 0
+        potential = 0
+        for u, w in combinations(G[v], 2):
+            squares = len((set(G[u]) & set(G[w])) - {v})
+            clustering[v] += squares
+            degm = squares + 1
+            if w in G[u]:
+                degm += 1
+            potential += (len(G[u]) - degm) * (len(G[w]) - degm) + squares  # changed multiply to addition
+        if potential > 0:
+            clustering[v] /= potential
+    if nodes in G:
+        # Return the value of the sole entry in the dictionary.
+        return clustering[nodes]
+    return clustering
+
+
+# another square clustering (problem : could larger than 1)
+def order_two_clustering(G, nodes=None):
+    """Paper: Higher-order clustering coefficients in barabasi–albert networks"""
+
+    if nodes is None:
+        node_iter = G
+    else:
+        node_iter = G.nbunch_iter(nodes)
+    clustering = {}
+    for v in node_iter:
+        clustering[v] = 0
+        potential = 0
+        for u, w in combinations(G[v], 2):
+            squares = len((set(G[u]) & set(G[w])) - {v})
+            clustering[v] += squares
+        degree = set(G[v]) - {v}
+        denominator = degree * (degree - 1) / 2
+        if denominator > 0:
+            clustering[v] /= potential
+    if nodes in G:
+        # Return the value of the sole entry in the dictionary.
+        return clustering[nodes]
+    return clustering
+
