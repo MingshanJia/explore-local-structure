@@ -438,14 +438,13 @@ def order_two_clustering(G, nodes=None):
     clustering = {}
     for v in node_iter:
         clustering[v] = 0
-        potential = 0
         for u, w in combinations(G[v], 2):
             squares = len((set(G[u]) & set(G[w])) - {v})
             clustering[v] += squares
-        degree = set(G[v]) - {v}
+        degree = len(set(G[v]) - {v})
         denominator = degree * (degree - 1) / 2
         if denominator > 0:
-            clustering[v] /= potential
+            clustering[v] /= denominator
     if nodes in G:
         # Return the value of the sole entry in the dictionary.
         return clustering[nodes]
