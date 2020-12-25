@@ -9,7 +9,9 @@ from networkx.utils import not_implemented_for
 
 __all__ = ['triangles', 'number_of_triangles', 'average_clustering', 'clustering', 'transitivity', 'triangles_and_otc',
            'triangles_and_ote', 'global_clustering', 'generalized_degree', 'average_closure', 'closure', 'clustering_closure_coefs',
-           'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure', 'four_closure_patterns']
+           'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure',
+           'four_clustering_patterns', 'four_closure_patterns', 'average_four_patterns']
+
 
 
 @not_implemented_for('directed')
@@ -29,16 +31,6 @@ def triangles(G, nodes=None):
     -------
     out : dictionary
        Number of triangles keyed by node label.
-
-    Examples
-    --------
-    >>> G=nx.complete_graph(5)
-    >>> print(nx.triangles(G,0))
-    6
-    >>> print(nx.triangles(G))
-    {0: 6, 1: 6, 2: 6, 3: 6, 4: 6}
-    >>> print(list(nx.triangles(G,(0,1)).values()))
-    [6, 6]
 
     Notes
     -----
@@ -159,42 +151,6 @@ def clustering_closure_coefs(G, nodes=None, weight=None):
         # Return the value of the sole entry in the dictionary.
         return cluclo[nodes]
     return cluclo
-
-
-
-# @not_implemented_for('multigraph')
-# def _weighted_triangles_and_degree_iter(G, nodes=None, weight='weight'):
-#     """ Return an iterator of (node, degree, weighted_triangles).
-#
-#     Used for weighted clustering.
-#
-#     """
-#     if weight is None or G.number_of_edges() == 0:
-#         max_weight = 1
-#     else:
-#         max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
-#     if nodes is None:
-#         nodes_nbrs = G.adj.items()
-#     else:
-#         nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
-#
-#     def wt(u, v):
-#         return G[u][v].get(weight, 1) / max_weight
-#
-#     for i, nbrs in nodes_nbrs:
-#         inbrs = set(nbrs) - {i}
-#         weighted_triangles = 0
-#         seen = set()
-#         for j in inbrs:
-#             seen.add(j)
-#             # This prevents double counting.    Note: prevent double here, but double later... funny..
-#             jnbrs = set(G[j]) - seen
-#             # Only compute the edge weight once, before the inner inner
-#             # loop.
-#             wij = wt(i, j)
-#             weighted_triangles += sum((wij * wt(j, k) * wt(k, i)) ** (1 / 3)
-#                                       for k in inbrs & jnbrs)
-#         yield (i, len(inbrs), 2 * weighted_triangles)
 
 
 # another way to calculate weighted clustering-co; to replace _weighted_triangles_and_degree_iter
@@ -379,13 +335,17 @@ def _directed_tgt_triangles_and_opentriads_iter(G, nodes=None):
         yield (i, tt, open_triads)
 
 
-##------------------------------------------ four patterns ------------------------------------------------------------
-def _four_closure_patterns_iter(G, nodes=None):
+##------------------------------------------ directed triangle formation patterns ------------------------------------------------------------
+# Key Function
+def _directed_triangle_patterns_iter(G, nodes=None):
     nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
 
     for i, preds, succs in nodes_nbrs:
         ipreds = set(preds) - {i}
         isuccs = set(succs) - {i}
+        di_out = len(isuccs)
+        di_in = len(ipreds)
+        di_in_out = len(ipreds & isuccs)
 
         t_head = 0
         t_end = 0
@@ -397,6 +357,11 @@ def _four_closure_patterns_iter(G, nodes=None):
         ote_mid = 0
         ote_cyc = 0
 
+        otc_head = di_out * (di_out - 1)
+        otc_end = di_in * (di_in - 1)
+        otc_mid_cyc = di_in * di_out - di_in_out
+
+        # calculating triangles in four patterns
         for j in isuccs:
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
@@ -417,7 +382,7 @@ def _four_closure_patterns_iter(G, nodes=None):
             t_mid += sum(1 for k in isuccs & jsuccs)
             t_cyc += sum(1 for k in isuccs & jpreds)
 
-
+        # calculating open triads in four patterns
         for j in ipreds & isuccs:
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
@@ -450,10 +415,10 @@ def _four_closure_patterns_iter(G, nodes=None):
             ote_mid += dj_out - 1
             ote_cyc += dj_in
 
-        yield (i, t_head, t_end, t_mid, t_cyc, ote_head, ote_end, ote_mid, ote_cyc)
+        yield (i, t_head, t_end, t_mid, t_cyc, ote_head, ote_end, ote_mid, ote_cyc, otc_head, otc_end, otc_mid_cyc)
 
 
-# for head-of-path pattern
+# not used, for head-of-path pattern
 def _head_pattern_iter(G, nodes=None):
     nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
 
@@ -486,7 +451,7 @@ def _head_pattern_iter(G, nodes=None):
         yield (i, t_head, ote_head)
 
 
-# for end-of-path pattern
+# not used, for end-of-path pattern
 def _end_pattern_iter(G, nodes=None):
     nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
 
@@ -520,7 +485,7 @@ def _end_pattern_iter(G, nodes=None):
         yield (i, t_end, ote_end)
 
 
-# for mid-of-path pattern
+# not used, for mid-of-path pattern
 def _mid_pattern_iter(G, nodes=None):
     nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
 
@@ -563,7 +528,7 @@ def _mid_pattern_iter(G, nodes=None):
         yield (i, t_mid, ote_mid)
 
 
-#for cyclic pattern
+# not used, for cyclic pattern
 def _cyc_pattern_iter(G, nodes=None):
     nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
 
@@ -603,58 +568,6 @@ def _cyc_pattern_iter(G, nodes=None):
             ote_cyc += dj_in
 
         yield (i, t_cyc, ote_cyc)
-
-
-# @not_implemented_for('multigraph')
-# def _directed_weighted_triangles_and_degree_iter(G, nodes=None, weight='weight'):
-#     """ Return an iterator of
-#     (node, total_degree, reciprocal_degree, directed_weighted_triangles).
-#
-#     Used for directed weighted clustering.
-#
-#     """
-#     if weight is None or G.number_of_edges() == 0:
-#         max_weight = 1
-#     else:
-#         max_weight = max(d.get(weight, 1) for u, v, d in G.edges(data=True))
-#
-#     nodes_nbrs = ((n, G._pred[n], G._succ[n]) for n in G.nbunch_iter(nodes))
-#
-#     def wt(u, v):
-#         return G[u][v].get(weight, 1) / max_weight
-#
-#     for i, preds, succs in nodes_nbrs:
-#         ipreds = set(preds) - {i}
-#         isuccs = set(succs) - {i}
-#
-#         directed_triangles = 0
-#         for j in ipreds:
-#             jpreds = set(G._pred[j]) - {j}
-#             jsuccs = set(G._succ[j]) - {j}
-#             directed_triangles += sum((wt(j, i) * wt(k, i) * wt(k, j))**(1 / 3)
-#                                       for k in ipreds & jpreds)
-#             directed_triangles += sum((wt(j, i) * wt(k, i) * wt(j, k))**(1 / 3)
-#                                       for k in ipreds & jsuccs)
-#             directed_triangles += sum((wt(j, i) * wt(i, k) * wt(k, j))**(1 / 3)
-#                                       for k in isuccs & jpreds)
-#             directed_triangles += sum((wt(j, i) * wt(i, k) * wt(j, k))**(1 / 3)
-#                                       for k in isuccs & jsuccs)
-#
-#         for j in isuccs:
-#             jpreds = set(G._pred[j]) - {j}
-#             jsuccs = set(G._succ[j]) - {j}
-#             directed_triangles += sum((wt(i, j) * wt(k, i) * wt(k, j))**(1 / 3)
-#                                       for k in ipreds & jpreds)
-#             directed_triangles += sum((wt(i, j) * wt(k, i) * wt(j, k))**(1 / 3)
-#                                       for k in ipreds & jsuccs)
-#             directed_triangles += sum((wt(i, j) * wt(i, k) * wt(k, j))**(1 / 3)
-#                                       for k in isuccs & jpreds)
-#             directed_triangles += sum((wt(i, j) * wt(i, k) * wt(j, k))**(1 / 3)
-#                                       for k in isuccs & jsuccs)
-#
-#         dtotal = len(ipreds) + len(isuccs)
-#         dbidirectional = len(ipreds & isuccs)
-#         yield (i, dtotal, dbidirectional, directed_triangles)
 
 
 # another way to calculate weighted clustering co; replace _directed_weighted_triangles_and_degree_iter
@@ -832,7 +745,7 @@ def clustering(G, nodes=None, weight=None):
     return clusterc
 
 
-# KEYFUNC: for closure-co
+# closure coefficient
 def closure(G, nodes=None, weight=None):
 
     if G.is_directed():
@@ -942,22 +855,67 @@ def tgt_closure(G, nodes=None, weight=None):
     return closurec
 
 
-# Compare this one and the four functions below
+# Calculate four closure patterns at the same time
 def four_closure_patterns(G, nodes=None, weight=None):
     if G.is_directed():
         if weight is not None:
             pass
         else:
-            pattern_iter = _four_closure_patterns_iter(G, nodes)
-
-            res = {v: [0, 0, 0, 0] if (t_h == 0 and t_e == 0 and t_m ==0 and t_c == 0) else [t_h / ote_h, t_e / ote_e, t_m / ote_m, t_c / ote_c]
-                        for v, t_h, t_e, t_m, t_c, ote_h, ote_e, ote_m, ote_c in pattern_iter}
-
+            pattern_iter = _directed_triangle_patterns_iter(G, nodes)
+            res = {}
+            for v, t_h, t_e, t_m, t_c, ote_h, ote_e, ote_m, ote_c, _, _, _ in pattern_iter:
+                head = 0 if t_h == 0 else t_h / ote_h
+                end = 0 if t_e == 0 else t_e / ote_e
+                mid = 0 if t_m == 0 else t_m / ote_m
+                cyc = 0 if t_c == 0 else t_c / ote_c
+                res[v] = [head, end, mid, cyc]
     if nodes in G:
         return res[nodes]
     return res
 
 
+# Calculate four clustering patterns at the same time
+def four_clustering_patterns(G, nodes=None, weight=None):
+    if G.is_directed():
+        if weight is not None:
+            pass
+        else:
+            pattern_iter = _directed_triangle_patterns_iter(G, nodes)
+            res = {}
+            for v, t_h, t_e, t_m, t_c, _, _, _, _, otc_h, otc_e, otc_mc in pattern_iter:
+                head = 0 if t_h == 0 else t_h / otc_h
+                end = 0 if t_e == 0 else t_e / otc_e
+                mid = 0 if t_m == 0 else t_m / otc_mc
+                cyc = 0 if t_c == 0 else t_c / otc_mc
+                res[v] = [head, end, mid, cyc]
+    if nodes in G:
+        return res[nodes]
+    return res
+
+
+def average_four_patterns(G, closure=True, nodes=None, weight=None, count_zeros=True):
+    if closure:
+        values = four_closure_patterns(G, nodes, weight=weight).values()
+    else:
+        values = four_clustering_patterns(G, nodes, weight=weight).values()
+    head = []
+    end = []
+    mid = []
+    cyc = []
+    for v in values:
+        head.append(v[0])
+        end.append(v[1])
+        mid.append(v[2])
+        cyc.append(v[3])
+    if not count_zeros:
+        head = [v for v in head if v > 0]
+        end = [v for v in end if v > 0]
+        mid = [v for v in mid if v > 0]
+        cyc = [v for v in cyc if v > 0]
+    return sum(head) / len(head), sum(end) / len(end), sum(mid) / len(mid), sum(cyc) / len(cyc)
+
+
+# not used
 def head_closure(G, nodes=None, weight=None):
 
     if G.is_directed():
@@ -973,7 +931,7 @@ def head_closure(G, nodes=None, weight=None):
         return closurec[nodes]
     return closurec
 
-
+# not used
 def mid_closure(G, nodes=None, weight=None):
 
     if G.is_directed():
@@ -989,7 +947,7 @@ def mid_closure(G, nodes=None, weight=None):
         return closurec[nodes]
     return closurec
 
-
+# not used
 def end_closure(G, nodes=None, weight=None):
 
     if G.is_directed():
@@ -1005,7 +963,7 @@ def end_closure(G, nodes=None, weight=None):
         return closurec[nodes]
     return closurec
 
-
+# not used
 def cyc_closure(G, nodes=None, weight=None):
 
     if G.is_directed():
@@ -1020,38 +978,6 @@ def cyc_closure(G, nodes=None, weight=None):
     if nodes in G:
         return closurec[nodes]
     return closurec
-
-
-def average_head_closure(G, nodes=None, weight=None, count_zeros=True):
-
-    h = head_closure(G, nodes, weight=weight).values()
-    if not count_zeros:
-        h = [v for v in h if v > 0]
-    return sum(h) / len(h)
-
-
-def average_mid_closure(G, nodes=None, weight=None, count_zeros=True):
-
-    m = mid_closure(G, nodes, weight=weight).values()
-    if not count_zeros:
-        m = [v for v in m if v > 0]
-    return sum(m) / len(m)
-
-
-def average_end_closure(G, nodes=None, weight=None, count_zeros=True):
-
-    e = end_closure(G, nodes, weight=weight).values()
-    if not count_zeros:
-        e = [v for v in e if v > 0]
-    return sum(e) / len(e)
-
-
-def average_cyc_closure(G, nodes=None, weight=None, count_zeros=True):
-
-    c = cyc_closure(G, nodes, weight=weight).values()
-    if not count_zeros:
-        c = [v for v in c if v > 0]
-    return sum(c) / len(c)
 
 
 def transitivity(G):
