@@ -15,6 +15,7 @@ def chunks(lst, n):
                 yield lst[i : i + n]
 
 
+# for correlation of node degree and four coefs.
 def degree_coefs_corr(G):
     degree_list = list(G.degree())
     sorted_degree_list = [(k,v) for k, v in sorted(degree_list, key=lambda item: item[1])]
