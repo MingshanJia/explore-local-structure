@@ -1,7 +1,7 @@
 import networkx as nx
 import pandas as pd
 
-__all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_network_info', 'get_cc_ce_df']
+__all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_network_info', 'get_cc_ce_df', 'get_eight_patterns_df']
 
 
 # get four coefs.
@@ -110,6 +110,19 @@ def get_cc_ce_df(G, weight = None):
     node_cc_ce = sorted(node_cc_ce, key=lambda t:t[1])
     df_cc_ce = pd.DataFrame(node_cc_ce, columns=['node-id','cc', 'ce'])
     return df_cc_ce
+
+
+# for directed and unweighted networks
+def get_eight_patterns_df(G):
+    clo_patterns = nx.four_closure_patterns(G)
+    clu_patterns = nx.four_clustering_patterns(G)
+    node_eight_patterns = []
+    for k, v1, v2 in common_entries(clo_patterns, clu_patterns):
+        node_eight_patterns.append([k, v1[0], v1[1], v1[2], v1[3], v2[0], v2[1], v2[2], v2[3]])
+    node_eight_patterns_df = pd.DataFrame(node_eight_patterns,
+                                       columns=['node-id', 'closure-head', 'closure-end', 'closure-mid', 'closure-cyc', 'clustering-head',
+                                                'clustering-end', 'clustering-mid', 'clustering-cyc'])
+    return node_eight_patterns_df
 
 
 def common_entries(*dcts):
