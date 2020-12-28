@@ -10,7 +10,7 @@ from networkx.utils import not_implemented_for
 __all__ = ['triangles', 'number_of_triangles', 'average_clustering', 'clustering', 'transitivity', 'triangles_and_otc',
            'triangles_and_ote', 'global_clustering', 'generalized_degree', 'average_closure', 'closure', 'clustering_closure_coefs',
            'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure',
-           'four_clustering_patterns', 'four_closure_patterns', 'average_four_patterns']
+           'four_clustering_patterns', 'average_eight_patterns']
 
 
 
@@ -893,26 +893,40 @@ def four_clustering_patterns(G, nodes=None, weight=None):
     return res
 
 
-def average_four_patterns(G, closure=True, nodes=None, weight=None, count_zeros=True):
-    if closure:
-        values = four_closure_patterns(G, nodes, weight=weight).values()
-    else:
-        values = four_clustering_patterns(G, nodes, weight=weight).values()
-    head = []
-    end = []
-    mid = []
-    cyc = []
-    for v in values:
-        head.append(v[0])
-        end.append(v[1])
-        mid.append(v[2])
-        cyc.append(v[3])
+def average_eight_patterns(G, nodes=None, weight=None, count_zeros=True):
+    closure_patterns = four_closure_patterns(G, nodes, weight=weight).values()
+    clustering_patterns = four_clustering_patterns(G, nodes, weight=weight).values()
+    clo_head = []
+    clo_end = []
+    clo_mid = []
+    clo_cyc = []
+    clu_head = []
+    clu_end = []
+    clu_mid = []
+    clu_cyc = []
+    for v in closure_patterns:
+        clo_head.append(v[0])
+        clo_end.append(v[1])
+        clo_mid.append(v[2])
+        clo_cyc.append(v[3])
+    for v in clustering_patterns:
+        clu_head.append(v[0])
+        clu_end.append(v[1])
+        clu_mid.append(v[2])
+        clu_cyc.append(v[3])
     if not count_zeros:
-        head = [v for v in head if v > 0]
-        end = [v for v in end if v > 0]
-        mid = [v for v in mid if v > 0]
-        cyc = [v for v in cyc if v > 0]
-    return sum(head) / len(head), sum(end) / len(end), sum(mid) / len(mid), sum(cyc) / len(cyc)
+        clo_head = [v for v in clo_head if v > 0]
+        clo_end = [v for v in clo_end if v > 0]
+        clo_mid = [v for v in clo_mid if v > 0]
+        clo_cyc = [v for v in clo_cyc if v > 0]
+        clu_head = [v for v in clu_head if v > 0]
+        clu_end = [v for v in clu_end if v > 0]
+        clu_mid = [v for v in clu_mid if v > 0]
+        clu_cyc = [v for v in clu_cyc if v > 0]
+
+    return sum(clo_head) / len(clo_head), sum(clo_end) / len(clo_end), sum(clo_mid) / len(clo_mid), sum(clo_cyc) / len(clo_cyc), \
+           sum(clu_head) / len(clu_head), sum(clu_end) / len(clu_end), sum(clu_mid) / len(clu_mid), sum(clu_cyc) / len(clu_cyc)
+
 
 
 # not used
