@@ -14,7 +14,7 @@ The code of all the experiments in our paper can be found in https://github.com/
 
 Datasets
 --------
-The datasets used in the experiments is located at https://github.com/MingshanJia/explore-local-structure/tree/master/datasets
+The datasets used in the experiments is located at https://github.com/MingshanJia/explore-local-structure/tree/master/experiments_for_quad/datasets
 
 Install
 -------
