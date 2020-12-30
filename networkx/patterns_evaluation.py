@@ -114,11 +114,10 @@ def get_cc_ce_df(G, weight = None):
 
 # for directed and unweighted networks
 def get_eight_patterns_df(G):
-    clo_patterns = nx.four_closure_patterns(G)
-    clu_patterns = nx.four_clustering_patterns(G)
+    patterns = nx.eight_patterns(G)
     node_eight_patterns = []
-    for k, v1, v2 in common_entries(clo_patterns, clu_patterns):
-        node_eight_patterns.append([k, v1[0], v1[1], v1[2], v1[3], v2[0], v2[1], v2[2], v2[3]])
+    for k, v in patterns.items():
+        node_eight_patterns.append([k, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]])
     node_eight_patterns_df = pd.DataFrame(node_eight_patterns,
                                        columns=['node-id', 'closure-head', 'closure-end', 'closure-mid', 'closure-cyc', 'clustering-head',
                                                 'clustering-end', 'clustering-mid', 'clustering-cyc'])

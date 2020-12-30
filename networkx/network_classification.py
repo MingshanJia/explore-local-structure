@@ -1,9 +1,13 @@
 from sklearn import metrics
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import scale
+import numpy as np
 
 __all__ = ['classify_networks']
 
-def classify_networks(data, labels, n_cluster, repeat=1000):
+def classify_networks(data, labels, repeat=1000):
+    data = scale(data)
+    n_cluster = len(np.unique(labels))
     homo = 0
     compl = 0
     v_measure = 0
@@ -20,4 +24,5 @@ def classify_networks(data, labels, n_cluster, repeat=1000):
         if v > v_measure:
             v_measure = v
             model = estimator
+    print("homo:{}  compl:{}   v-measure:{}\n".format(homo, compl, v_measure))
     return model, homo, compl, v_measure

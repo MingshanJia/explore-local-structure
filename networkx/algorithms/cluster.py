@@ -10,7 +10,7 @@ from networkx.utils import not_implemented_for
 __all__ = ['triangles', 'number_of_triangles', 'average_clustering', 'clustering', 'transitivity', 'triangles_and_otc',
            'triangles_and_ote', 'global_clustering', 'generalized_degree', 'average_closure', 'closure', 'clustering_closure_coefs',
            'src_closure', 'tgt_closure', 'head_closure', 'mid_closure', 'end_closure', 'cyc_closure',
-           'four_clustering_patterns', 'average_eight_patterns']
+           'four_clustering_patterns', 'average_eight_patterns', 'four_closure_patterns', 'eight_patterns']
 
 
 
@@ -855,7 +855,7 @@ def tgt_closure(G, nodes=None, weight=None):
     return closurec
 
 
-# Calculate four closure patterns at the same time
+# obsolete, Calculate four closure patterns at the same time
 def four_closure_patterns(G, nodes=None, weight=None):
     if G.is_directed():
         if weight is not None:
@@ -874,7 +874,7 @@ def four_closure_patterns(G, nodes=None, weight=None):
     return res
 
 
-# Calculate four clustering patterns at the same time
+# obsolete, Calculate four clustering patterns at the same time
 def four_clustering_patterns(G, nodes=None, weight=None):
     if G.is_directed():
         if weight is not None:
@@ -893,9 +893,31 @@ def four_clustering_patterns(G, nodes=None, weight=None):
     return res
 
 
+# Calculate four closure patterns and four clustering patterns at the same time
+def eight_patterns(G, nodes=None, weight=None):
+    if G.is_directed():
+        if weight is not None:
+            pass
+        else:
+            pattern_iter = _directed_triangle_patterns_iter(G, nodes)
+            res = {}
+            for v, t_h, t_e, t_m, t_c, ote_h, ote_e, ote_m, ote_c, otc_h, otc_e, otc_mc in pattern_iter:
+                clo_head = 0 if t_h == 0 else t_h / ote_h
+                clo_end = 0 if t_e == 0 else t_e / ote_e
+                clo_mid = 0 if t_m == 0 else t_m / ote_m
+                clo_cyc = 0 if t_c == 0 else t_c / ote_c
+                clu_head = 0 if t_h == 0 else t_h / otc_h
+                clu_end = 0 if t_e == 0 else t_e / otc_e
+                clu_mid = 0 if t_m == 0 else t_m / otc_mc
+                clu_cyc = 0 if t_c == 0 else t_c / otc_mc
+                res[v] = [clo_head, clo_end, clo_mid, clo_cyc, clu_head, clu_end, clu_mid, clu_cyc]
+    if nodes in G:
+        return res[nodes]
+    return res
+
+
 def average_eight_patterns(G, nodes=None, weight=None, count_zeros=True):
-    closure_patterns = four_closure_patterns(G, nodes, weight=weight).values()
-    clustering_patterns = four_clustering_patterns(G, nodes, weight=weight).values()
+    patterns = eight_patterns(G, nodes, weight=weight).values()
     clo_head = []
     clo_end = []
     clo_mid = []
@@ -904,16 +926,15 @@ def average_eight_patterns(G, nodes=None, weight=None, count_zeros=True):
     clu_end = []
     clu_mid = []
     clu_cyc = []
-    for v in closure_patterns:
+    for v in patterns:
         clo_head.append(v[0])
         clo_end.append(v[1])
         clo_mid.append(v[2])
         clo_cyc.append(v[3])
-    for v in clustering_patterns:
-        clu_head.append(v[0])
-        clu_end.append(v[1])
-        clu_mid.append(v[2])
-        clu_cyc.append(v[3])
+        clu_head.append(v[4])
+        clu_end.append(v[5])
+        clu_mid.append(v[6])
+        clu_cyc.append(v[7])
     if not count_zeros:
         clo_head = [v for v in clo_head if v > 0]
         clo_end = [v for v in clo_end if v > 0]
@@ -923,9 +944,8 @@ def average_eight_patterns(G, nodes=None, weight=None, count_zeros=True):
         clu_end = [v for v in clu_end if v > 0]
         clu_mid = [v for v in clu_mid if v > 0]
         clu_cyc = [v for v in clu_cyc if v > 0]
-
-    return sum(clo_head) / len(clo_head), sum(clo_end) / len(clo_end), sum(clo_mid) / len(clo_mid), sum(clo_cyc) / len(clo_cyc), \
-           sum(clu_head) / len(clu_head), sum(clu_end) / len(clu_end), sum(clu_mid) / len(clu_mid), sum(clu_cyc) / len(clu_cyc)
+    return [sum(clo_head) / len(clo_head), sum(clo_end) / len(clo_end), sum(clo_mid) / len(clo_mid), sum(clo_cyc) / len(clo_cyc), \
+           sum(clu_head) / len(clu_head), sum(clu_end) / len(clu_end), sum(clu_mid) / len(clu_mid), sum(clu_cyc) / len(clu_cyc)]
 
 
 
