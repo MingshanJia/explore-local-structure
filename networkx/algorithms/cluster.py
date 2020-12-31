@@ -357,11 +357,14 @@ def _directed_triangle_patterns_iter(G, nodes=None):
         ote_mid = 0
         ote_cyc = 0
 
+        # otc_head and otc_end are actually two times the number of open triads, because the closing edge can take two directions
         otc_head = di_out * (di_out - 1)
         otc_end = di_in * (di_in - 1)
         otc_mid_cyc = di_in * di_out - di_in_out
 
-        # calculating triangles in four patterns
+        # calculating triangles in four patterns: t_head, t_end, t_mid and t_cyc here are actually two times the number of triangles of each pattern.
+        # for the four clustering patterns, we need to divide them by two.
+        # TODO: debug t_mid, t_cyc
         for j in isuccs:
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
@@ -414,7 +417,9 @@ def _directed_triangle_patterns_iter(G, nodes=None):
             ote_end += dj - 1
             ote_mid += dj_out - 1
             ote_cyc += dj_in
-
+        # for testing
+        # print("t_head:{};  t_end:{};  t_mid:{};  t_cyc:{};   ote_head:{};   ote_end:{};   ote_mid:{};   ote_cyc:{};  \
+        #  otc_head:{};   otc_end:{};   otc_mid_cyc:{}\n".format(t_head, t_end, t_mid, t_cyc, ote_head, ote_end, ote_mid, ote_cyc, otc_head, otc_end, otc_mid_cyc))
         yield (i, t_head, t_end, t_mid, t_cyc, ote_head, ote_end, ote_mid, ote_cyc, otc_head, otc_end, otc_mid_cyc)
 
 
@@ -906,10 +911,12 @@ def eight_patterns(G, nodes=None, weight=None):
                 clo_end = 0 if t_e == 0 else t_e / ote_e
                 clo_mid = 0 if t_m == 0 else t_m / ote_m
                 clo_cyc = 0 if t_c == 0 else t_c / ote_c
-                clu_head = 0 if t_h == 0 else t_h / otc_h
-                clu_end = 0 if t_e == 0 else t_e / otc_e
-                clu_mid = 0 if t_m == 0 else t_m / otc_mc
-                clu_cyc = 0 if t_c == 0 else t_c / otc_mc
+
+                # divide clustering patterns by two
+                clu_head = 0 if t_h == 0 else t_h / (2 * otc_h)
+                clu_end = 0 if t_e == 0 else t_e / (2 * otc_e)
+                clu_mid = 0 if t_m == 0 else t_m / (2 * otc_mc)
+                clu_cyc = 0 if t_c == 0 else t_c / (2 * otc_mc)
                 res[v] = [clo_head, clo_end, clo_mid, clo_cyc, clu_head, clu_end, clu_mid, clu_cyc]
     if nodes in G:
         return res[nodes]
