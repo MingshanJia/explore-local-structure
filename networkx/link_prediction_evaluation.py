@@ -22,8 +22,8 @@ __all__ = ['link_pred_supervised_learning', 'get_dataset', 'BFS_sampling',
 
 
 # link prediction for directed network
-def link_pred_directed_network(G, print_on=False, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5):
-    dataset = get_dataset(G, sample_size, sample_time, repeat, old_pct, supervised=False, directed=True)
+def link_pred_directed_network(G, print_on=False, sample_time=5, sample_size=3000, repeat=10, old_pct=0.5):
+    dataset = get_dataset(G, sample_time, sample_size, repeat, old_pct, supervised=False, directed=True)
     rg = 0
     cn = 0
     aa = 0
@@ -63,6 +63,7 @@ def link_pred_directed_network(G, print_on=False, sample_size=5000, sample_time=
     print('clo1: %.3f' % clo1)
     print('clo2: %.3f' % clo2)
     return rg, cn, aa, ra, clo1, clo2
+
 
 # compare with 4 feature sets:
 # set 1: 5 baseline features

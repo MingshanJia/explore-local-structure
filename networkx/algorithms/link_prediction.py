@@ -4,8 +4,8 @@ Link prediction algorithms.
 
 
 from math import log
-
 import networkx as nx
+from sklearn.metrics import roc_auc_score
 from networkx.utils import not_implemented_for
 
 
@@ -25,7 +25,41 @@ __all__ = ['random_guess',
            'ra_index_soundarajan_hopcroft',
            'within_inter_cluster',
            'perform_link_prediction',
-           'perform_link_prediction_undir']
+           'perform_link_prediction_undir',
+           'perform_link_prediction_with_rocauc']
+
+def perform_link_prediction_with_rocauc(G_old, G_new, method, dict_ce):
+    G_new = G_new.subgraph(G_old.nodes())
+    y_label = []
+    y_score = []
+    k = G_new.number_of_edges()    # number of links chosen from prediction, also number of links in ground truth
+    if k == 0:
+        return 1
+    else:
+        if method == 'cn':
+            preds= common_neighbor_index(G_old)
+        if method == 'ja':
+            preds = jaccard_coefficient(G_old)
+        if method == 'aa':
+            preds = adamic_adar_index(G_old)
+        if method == 'ra':
+            preds = resource_allocation_index(G_old)
+        if method == 'clo1':
+            preds = closure_similarity_index(G_old, dict_ce)
+        if method == 'clo2':
+            preds = closure_similarity_index_two(G_old, dict_ce)
+        if method == 'dgr':
+            preds = degree_similarity_index(G_old)
+
+    max_score = preds[0][2]
+    for e in preds:
+        y_score.append(e[2] / max_score)
+        if (e[0], e[1]) in G_new.edges():
+            y_label.append(1)
+        else:
+            y_label.append(0)
+    rocauc = roc_auc_score(y_label, y_score)
+    return rocauc
 
 
 def perform_link_prediction_undir(G_old, G_new, method):
@@ -51,7 +85,7 @@ def perform_link_prediction_undir(G_old, G_new, method):
         return 100 * correct / k
 
 
-# KeyFunc: return prediction precision
+# return prediction precision
 def perform_link_prediction(G_old, G_new, method, dict_ce):
     G_new = G_new.subgraph(G_old.nodes())
     k = G_new.number_of_edges()    # number of links chosen from prediction, also number of links in ground truth
