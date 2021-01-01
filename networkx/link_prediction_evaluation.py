@@ -21,6 +21,49 @@ __all__ = ['link_pred_supervised_learning', 'get_dataset', 'BFS_sampling',
            'link_pred_similarity_based', 'link_pred_in_precision', 'link_pred_directed_network',]
 
 
+# link prediction for directed network
+def link_pred_directed_network(G, print_on=False, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5):
+    dataset = get_dataset(G, sample_size, sample_time, repeat, old_pct, supervised=False, directed=True)
+    rg = 0
+    cn = 0
+    aa = 0
+    ra = 0
+    clo1 = 0
+    clo2 = 0
+    n = len(dataset)
+    i = 0
+    for g in tqdm(dataset):
+        i = i + 1
+        dict_ce = nx.closure(g[0])
+        rg += nx.random_guess(g[0], g[1])
+        cn += nx.perform_link_prediction(g[0], g[1], 'cn', dict_ce)
+        aa += nx.perform_link_prediction(g[0], g[1], 'aa', dict_ce)
+        ra += nx.perform_link_prediction(g[0], g[1], 'ra', dict_ce)
+        clo1 += nx.perform_link_prediction(g[0], g[1], 'clo1', dict_ce)
+        clo2 += nx.perform_link_prediction(g[0], g[1], 'clo2', dict_ce)
+        if print_on:
+            print("Result until dataset no.{}:\n"
+                  "rg:   {}\n"
+                  "cn:   {}\n"
+                  "aa:   {}\n"
+                  "ra:   {}\n"
+                  "clo1: {}\n"
+                  "clo2: {}\n".
+                  format(i, rg/i, cn/i, aa/i, ra/i, clo1/i, clo2/i))
+    rg /= n
+    cn /= n
+    aa /= n
+    ra /= n
+    clo1 /= n
+    clo2 /= n
+    print('rg: %.3f' % rg)
+    print('cn: %.3f' % cn)
+    print('aa: %.3f' % aa)
+    print('ra: %.3f' % ra)
+    print('clo1: %.3f' % clo1)
+    print('clo2: %.3f' % clo2)
+    return rg, cn, aa, ra, clo1, clo2
+
 # compare with 4 feature sets:
 # set 1: 5 baseline features
 # set 2: baseline features + iquad
@@ -313,39 +356,6 @@ def link_pred_in_precision(G, sample_size=5000, sample_time=10, repeat=10, old_p
     print('cn-l3: %.3f' % cn_l3)
     print('cn-l3-norm: %.3f' % cn_l3_norm)
     return rg, cn, ra, cn_clu, cn_l3, cn_l3_norm
-
-
-# APP4: link prediction for directed network
-def link_pred_directed_network(G, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5):
-    dataset = get_dataset(G, sample_size, sample_time, repeat, old_pct, supervised=False, directed=True)
-    rg = 0
-    cn = 0
-    aa = 0
-    ra = 0
-    clo1 = 0
-    clo2 = 0
-    n = len(dataset)
-    for g in tqdm(dataset):
-        dict_ce = nx.closure(g[0])
-        rg += nx.random_guess(g[0], g[1])
-        cn += nx.perform_link_prediction(g[0], g[1], 'cn', dict_ce)
-        aa += nx.perform_link_prediction(g[0], g[1], 'aa', dict_ce)
-        ra += nx.perform_link_prediction(g[0], g[1], 'ra', dict_ce)
-        clo1 += nx.perform_link_prediction(g[0], g[1], 'clo1', dict_ce)
-        clo2 += nx.perform_link_prediction(g[0], g[1], 'clo2', dict_ce)
-    rg /= n
-    cn /= n
-    aa /= n
-    ra /= n
-    clo1 /= n
-    clo2 /= n
-    print('rg: %.3f' % rg)
-    print('cn: %.3f' % cn)
-    print('aa: %.3f' % aa)
-    print('ra: %.3f' % ra)
-    print('clo1: %.3f' % clo1)
-    print('clo2: %.3f' % clo2)
-    return rg, cn, aa, ra, clo1, clo2
 
 
 # get sample graph
