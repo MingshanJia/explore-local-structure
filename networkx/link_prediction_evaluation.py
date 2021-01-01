@@ -22,7 +22,7 @@ __all__ = ['link_pred_supervised_learning', 'get_dataset', 'BFS_sampling',
 
 
 # link prediction for directed network
-def link_pred_directed_network(G, print_on=False, sample_time=5, sample_size=3000, repeat=10, old_pct=0.5):
+def link_pred_directed_network(G, print_on=False, roc_auc=True, sample_time=5, sample_size=3000, repeat=10, old_pct=0.5):
     dataset = get_dataset(G, sample_time, sample_size, repeat, old_pct, supervised=False, directed=True)
     rg = 0
     cn = 0
@@ -35,12 +35,19 @@ def link_pred_directed_network(G, print_on=False, sample_time=5, sample_size=300
     for g in tqdm(dataset):
         i = i + 1
         dict_ce = nx.closure(g[0])
-        rg += nx.random_guess(g[0], g[1])
-        cn += nx.perform_link_prediction(g[0], g[1], 'cn', dict_ce)
-        aa += nx.perform_link_prediction(g[0], g[1], 'aa', dict_ce)
-        ra += nx.perform_link_prediction(g[0], g[1], 'ra', dict_ce)
-        clo1 += nx.perform_link_prediction(g[0], g[1], 'clo1', dict_ce)
-        clo2 += nx.perform_link_prediction(g[0], g[1], 'clo2', dict_ce)
+        if roc_auc:
+            cn += nx.perform_link_prediction_using_rocauc(g[0], g[1], 'cn', dict_ce)
+            aa += nx.perform_link_prediction_using_rocauc(g[0], g[1], 'aa', dict_ce)
+            ra += nx.perform_link_prediction_using_rocauc(g[0], g[1], 'ra', dict_ce)
+            clo1 += nx.perform_link_prediction_using_rocauc(g[0], g[1], 'clo1', dict_ce)
+            clo2 += nx.perform_link_prediction_using_rocauc(g[0], g[1], 'clo2', dict_ce)
+        else:
+            rg += nx.random_guess(g[0], g[1])
+            cn += nx.perform_link_prediction_using_precision(g[0], g[1], 'cn', dict_ce)
+            aa += nx.perform_link_prediction_using_precision(g[0], g[1], 'aa', dict_ce)
+            ra += nx.perform_link_prediction_using_precision(g[0], g[1], 'ra', dict_ce)
+            clo1 += nx.perform_link_prediction_using_precision(g[0], g[1], 'clo1', dict_ce)
+            clo2 += nx.perform_link_prediction_using_precision(g[0], g[1], 'clo2', dict_ce)
         if print_on:
             print("Result until dataset no.{}:\n"
                   "rg:   {}\n"
@@ -327,7 +334,7 @@ def get_predict_score(G_old, method):
     return normalized_predicts
 
 
-# APP3: similarity based methods evaluated in precision
+# not used APP3: similarity based methods evaluated in precision
 def link_pred_in_precision(G, sample_size=5000, sample_time=10, repeat=10, old_pct=0.5):
     dataset = get_dataset(G, sample_size, sample_time, repeat, old_pct, supervised=False, directed=False)
     rg = 0  # random guess

@@ -24,11 +24,11 @@ __all__ = ['random_guess',
            'cn_soundarajan_hopcroft',
            'ra_index_soundarajan_hopcroft',
            'within_inter_cluster',
-           'perform_link_prediction',
+           'perform_link_prediction_using_precision',
            'perform_link_prediction_undir',
-           'perform_link_prediction_with_rocauc']
+           'perform_link_prediction_using_rocauc']
 
-def perform_link_prediction_with_rocauc(G_old, G_new, method, dict_ce):
+def perform_link_prediction_using_rocauc(G_old, G_new, method, dict_ce):
     G_new = G_new.subgraph(G_old.nodes())
     y_label = []
     y_score = []
@@ -62,31 +62,8 @@ def perform_link_prediction_with_rocauc(G_old, G_new, method, dict_ce):
     return rocauc
 
 
-def perform_link_prediction_undir(G_old, G_new, method):
-    G_new = G_new.subgraph(G_old.nodes())
-    k = G_new.number_of_edges()    # number of links chosen from prediction, also number of links in ground truth
-    if k == 0:
-        return 1
-    else:
-        if method == 'cn':
-            pred_links = common_neighbor_index(G_old)[0 : k]
-        if method == 'ra':
-            pred_links = resource_allocation_index(G_old)[0 : k]
-        if method == 'cn+clu':
-            pred_links = common_neighbor_plus_clustering(G_old)[0 : k]
-        if method == 'cn-l3':
-            pred_links = common_neighbor_l3_index(G_old)[0 : k]
-        if method == 'cn-l3-norm':
-            pred_links = common_neighbor_l3_degree_normalized_index(G_old)[0 : k]
-        correct = 0
-        for e in pred_links:
-            if (e[0], e[1]) in G_new.edges():
-                correct += 1
-        return 100 * correct / k
-
-
 # return prediction precision
-def perform_link_prediction(G_old, G_new, method, dict_ce):
+def perform_link_prediction_using_precision(G_old, G_new, method, dict_ce):
     G_new = G_new.subgraph(G_old.nodes())
     k = G_new.number_of_edges()    # number of links chosen from prediction, also number of links in ground truth
     if k == 0:
@@ -106,10 +83,29 @@ def perform_link_prediction(G_old, G_new, method, dict_ce):
             pred_links = closure_similarity_index_two(G_old, dict_ce)[0 : k]
         if method == 'dgr':
             pred_links = degree_similarity_index(G_old)[0 : k]
-        # clo3 is only for directed network
-        # if method == 'clo3':
-        #     pred_links = closure_similarity_index_three(G_old, dict_ce)[0 : k]
+        correct = 0
+        for e in pred_links:
+            if (e[0], e[1]) in G_new.edges():
+                correct += 1
+        return 100 * correct / k
 
+
+def perform_link_prediction_undir(G_old, G_new, method):
+    G_new = G_new.subgraph(G_old.nodes())
+    k = G_new.number_of_edges()    # number of links chosen from prediction, also number of links in ground truth
+    if k == 0:
+        return 1
+    else:
+        if method == 'cn':
+            pred_links = common_neighbor_index(G_old)[0 : k]
+        if method == 'ra':
+            pred_links = resource_allocation_index(G_old)[0 : k]
+        if method == 'cn+clu':
+            pred_links = common_neighbor_plus_clustering(G_old)[0 : k]
+        if method == 'cn-l3':
+            pred_links = common_neighbor_l3_index(G_old)[0 : k]
+        if method == 'cn-l3-norm':
+            pred_links = common_neighbor_l3_degree_normalized_index(G_old)[0 : k]
         correct = 0
         for e in pred_links:
             if (e[0], e[1]) in G_new.edges():
