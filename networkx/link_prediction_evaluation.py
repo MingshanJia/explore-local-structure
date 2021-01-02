@@ -22,7 +22,7 @@ __all__ = ['link_pred_supervised_learning', 'get_dataset', 'BFS_sampling',
 
 
 # link prediction for directed network
-def link_pred_directed_network(G, print_on=False, roc_auc=True, sample_time=5, sample_size=3000, repeat=10, old_pct=0.5):
+def link_pred_directed_network(G, filename="", print_on=False, roc_auc=True, sample_time=10, sample_size=3000, repeat=100, old_pct=0.5):
     dataset = get_dataset(G, sample_time, sample_size, repeat, old_pct, supervised=False, directed=True)
     rg = 0
     cn = 0
@@ -69,6 +69,15 @@ def link_pred_directed_network(G, print_on=False, roc_auc=True, sample_time=5, s
     print('ra: %.3f' % ra)
     print('clo1: %.3f' % clo1)
     print('clo2: %.3f' % clo2)
+    if filename:
+        with open(filename, 'w') as f:
+            f.write("Total repetition:  %d\n" % n)
+            f.write(" rg:   %.4f\n" % rg)
+            f.write(" cn:   %.4f\n" % cn)
+            f.write(" aa:   %.4f\n" % aa)
+            f.write(" ra:   %.4f\n" % ra)
+            f.write(" cci:  %.4f\n" % clo1)
+            f.write(" ecci: %.4f\n" % clo2)
     return rg, cn, aa, ra, clo1, clo2
 
 
