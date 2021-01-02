@@ -4,6 +4,34 @@ import pandas as pd
 __all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_network_info', 'get_cc_ce_df', 'get_eight_patterns_df']
 
 
+def get_key_info(G, filename="", weight=None):
+    n = G.number_of_nodes()
+    m = G.number_of_edges()
+    k = m / n
+    r = nx.overall_reciprocity(G)
+    cc = nx.average_clustering(G, weight=weight)
+    ce = nx.average_closure(G, weight=weight)
+    eps = nx.average_eight_patterns(G)
+    if filename:
+        with open(filename, 'w') as f:
+            f.write("|V|:      %d\n" % n)
+            f.write("|E|:      %d\n" % m)
+            f.write("k:        %.2f\n" % k)
+            f.write("r:        %.3f\n" % r)
+            f.write("clustering: %.3f\n" % cc)
+            f.write("closure:    %.3f\n" % ce)
+            f.write("clustering-head:    %.3f\n" % eps[4])
+            f.write("clustering-end:     %.3f\n" % eps[5])
+            f.write("clustering-mid:     %.3f\n" % eps[6])
+            f.write("clustering-cyc:     %.3f\n" % eps[7])
+            f.write("closure-head:    %.3f\n" % eps[0])
+            f.write("closure-end:     %.3f\n" % eps[1])
+            f.write("closure-mid:     %.3f\n" % eps[2])
+            f.write("closure-cyc:     %.3f\n" % eps[3])
+    res = [n, m, k, r, cc, ce, eps[0], eps[1], eps[2], eps[3], eps[4], eps[5], eps[6], eps[7]]
+    return res
+
+
 # get four coefs.
 def get_network_info(G, filename="", weight=None):
     n = G.number_of_nodes()
@@ -34,18 +62,6 @@ def get_network_info(G, filename="", weight=None):
     res.append(iquad / oquad if oquad > 0 else 0)
     res.append(iquad / clusering if clusering > 0 else 0)
     res.append(oquad / closure if closure > 0 else 0)
-    return res
-
-
-def get_key_info(G, weight = None):
-    n = G.number_of_nodes()
-    m = G.number_of_edges()
-    k = m / n
-    r = nx.overall_reciprocity(G)
-    cc = nx.average_clustering(G, weight=weight)
-    ce = nx.average_closure(G, weight=weight)
-
-    res = [n, m, k, r, cc, ce]
     return res
 
 
