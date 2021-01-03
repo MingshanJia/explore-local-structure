@@ -6,6 +6,8 @@ Link prediction algorithms.
 from math import log
 import networkx as nx
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import auc
 from networkx.utils import not_implemented_for
 
 
@@ -59,7 +61,9 @@ def perform_link_prediction_using_rocauc(G_old, G_new, method, dict_ce):
         else:
             y_label.append(0)
     rocauc = roc_auc_score(y_label, y_score)
-    return rocauc
+    precision, recall, _ = precision_recall_curve(y_label, y_score)
+    pr_auc = auc(recall, precision)
+    return rocauc, pr_auc
 
 
 # return prediction precision

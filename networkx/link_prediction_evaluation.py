@@ -22,63 +22,122 @@ __all__ = ['link_pred_supervised_learning', 'get_dataset', 'BFS_sampling',
 
 
 # link prediction for directed network
-def link_pred_directed_network(G, filename="", print_on=False, roc_auc=True, sample_time=10, sample_size=3000, repeat=100, old_pct=0.5):
+def link_pred_directed_network(G, filename="", print_on=True, sample_time=5, sample_size=3000, repeat=10, old_pct=0.5):
     dataset = get_dataset(G, sample_time, sample_size, repeat, old_pct, supervised=False, directed=True)
     rg = 0
-    cn = 0
-    aa = 0
-    ra = 0
-    clo1 = 0
-    clo2 = 0
+    cn_rocauc = 0
+    aa_rocauc = 0
+    ra_rocauc = 0
+    clo1_rocauc = 0
+    clo2_rocauc = 0
+    dgr_rocauc = 0
+
+    cn_prauc = 0
+    aa_prauc = 0
+    ra_prauc = 0
+    clo1_prauc = 0
+    clo2_prauc = 0
+    dgr_prauc = 0
+
     n = len(dataset)
     i = 0
     for g in tqdm(dataset):
         i = i + 1
         dict_ce = nx.closure(g[0])
-        if roc_auc:
-            cn += nx.perform_link_prediction_using_rocauc(g[0], g[1], 'cn', dict_ce)
-            aa += nx.perform_link_prediction_using_rocauc(g[0], g[1], 'aa', dict_ce)
-            ra += nx.perform_link_prediction_using_rocauc(g[0], g[1], 'ra', dict_ce)
-            clo1 += nx.perform_link_prediction_using_rocauc(g[0], g[1], 'clo1', dict_ce)
-            clo2 += nx.perform_link_prediction_using_rocauc(g[0], g[1], 'clo2', dict_ce)
-        else:
-            rg += nx.random_guess(g[0], g[1])
-            cn += nx.perform_link_prediction_using_precision(g[0], g[1], 'cn', dict_ce)
-            aa += nx.perform_link_prediction_using_precision(g[0], g[1], 'aa', dict_ce)
-            ra += nx.perform_link_prediction_using_precision(g[0], g[1], 'ra', dict_ce)
-            clo1 += nx.perform_link_prediction_using_precision(g[0], g[1], 'clo1', dict_ce)
-            clo2 += nx.perform_link_prediction_using_precision(g[0], g[1], 'clo2', dict_ce)
+        rg_i = nx.random_guess(g[0], g[1])
+        cn_rocauc_i, cn_prauc_i = nx.perform_link_prediction_using_rocauc(g[0], g[1], 'cn', dict_ce)
+        aa_rocauc_i, aa_prauc_i = nx.perform_link_prediction_using_rocauc(g[0], g[1], 'aa', dict_ce)
+        ra_rocauc_i, ra_prauc_i = nx.perform_link_prediction_using_rocauc(g[0], g[1], 'ra', dict_ce)
+        clo1_rocauc_i, clo1_prauc_i = nx.perform_link_prediction_using_rocauc(g[0], g[1], 'clo1', dict_ce)
+        clo2_rocauc_i, clo2_prauc_i = nx.perform_link_prediction_using_rocauc(g[0], g[1], 'clo2', dict_ce)
+        dgr_rocauc_i, dgr_prauc_i = nx.perform_link_prediction_using_rocauc(g[0], g[1], 'dgr', dict_ce)
+
+        rg += rg_i
+        cn_rocauc += cn_rocauc_i
+        aa_rocauc += aa_rocauc_i
+        ra_rocauc += ra_rocauc_i
+        clo1_rocauc += clo1_rocauc_i
+        clo2_rocauc += clo2_rocauc_i
+        dgr_rocauc += dgr_rocauc_i
+
+        cn_prauc += cn_prauc_i
+        aa_prauc += aa_prauc_i
+        ra_prauc += ra_prauc_i
+        clo1_prauc += clo1_prauc_i
+        clo2_prauc += clo2_prauc_i
+        dgr_prauc += dgr_prauc_i
+
         if print_on:
             print("Result until dataset no.{}:\n"
                   "rg:   {}\n"
+                  "ROC-AUC:\n"
                   "cn:   {}\n"
                   "aa:   {}\n"
                   "ra:   {}\n"
                   "clo1: {}\n"
-                  "clo2: {}\n".
-                  format(i, rg/i, cn/i, aa/i, ra/i, clo1/i, clo2/i))
+                  "clo2: {}\n"
+                  "dgr:  {}\n\n"
+                  "PR-AUC:\n"
+                  "cn:   {}\n"
+                  "aa:   {}\n"
+                  "ra:   {}\n"
+                  "clo1: {}\n"
+                  "clo2: {}\n"
+                  "dgr:  {}\n\n"
+                  .format(i, rg/i, cn_rocauc/i, aa_rocauc/i, ra_rocauc/i, clo1_rocauc/i, clo2_rocauc/i, dgr_rocauc/i,
+                         cn_prauc/i, aa_prauc/i, ra_prauc/i, clo1_prauc/i, clo2_prauc/i, dgr_prauc/i))
     rg /= n
-    cn /= n
-    aa /= n
-    ra /= n
-    clo1 /= n
-    clo2 /= n
-    print('rg: %.3f' % rg)
-    print('cn: %.3f' % cn)
-    print('aa: %.3f' % aa)
-    print('ra: %.3f' % ra)
-    print('clo1: %.3f' % clo1)
-    print('clo2: %.3f' % clo2)
+    cn_rocauc /= n
+    aa_rocauc /= n
+    ra_rocauc /= n
+    clo1_rocauc /= n
+    clo2_rocauc /= n
+    dgr_rocauc /= n
+
+    cn_prauc /= n
+    aa_prauc /= n
+    ra_prauc /= n
+    clo1_prauc /= n
+    clo2_prauc /= n
+    dgr_prauc /= n
+
+    print('rg:   %.3f' % rg)
+    print('ROC-AUC/n')
+    print('cn:   %.3f' % cn_rocauc)
+    print('aa:   %.3f' % aa_rocauc)
+    print('ra:   %.3f' % ra_rocauc)
+    print('clo1: %.3f' % clo1_rocauc)
+    print('clo2: %.3f' % clo2_rocauc)
+    print('dgr:  %.3f' % dgr_rocauc)
+    print('PR-AUC/n')
+    print('cn: %.3f' % cn_prauc)
+    print('aa: %.3f' % aa_prauc)
+    print('ra: %.3f' % ra_prauc)
+    print('clo1: %.3f' % clo1_prauc)
+    print('clo2: %.3f' % clo2_prauc)
+    print('dgr:  %.3f' % dgr_prauc)
+
     if filename:
         with open(filename, 'w') as f:
             f.write("Total repetition:  %d\n" % n)
             f.write(" rg:   %.4f\n" % rg)
-            f.write(" cn:   %.4f\n" % cn)
-            f.write(" aa:   %.4f\n" % aa)
-            f.write(" ra:   %.4f\n" % ra)
-            f.write(" cci:  %.4f\n" % clo1)
-            f.write(" ecci: %.4f\n" % clo2)
-    return rg, cn, aa, ra, clo1, clo2
+            f.write("ROC-AUC:\n")
+            f.write(" cn:   %.4f\n" % cn_rocauc)
+            f.write(" aa:   %.4f\n" % aa_rocauc)
+            f.write(" ra:   %.4f\n" % ra_rocauc)
+            f.write(" cci:  %.4f\n" % clo1_rocauc)
+            f.write(" ecci: %.4f\n" % clo2_rocauc)
+            f.write(" dgr:  %.4f\n" % dgr_rocauc)
+            f.write("PR-AUC:\n")
+            f.write(" rg:   %.4f\n" % rg)
+            f.write(" cn:   %.4f\n" % cn_prauc)
+            f.write(" aa:   %.4f\n" % aa_prauc)
+            f.write(" ra:   %.4f\n" % ra_prauc)
+            f.write(" cci:  %.4f\n" % clo1_prauc)
+            f.write(" ecci: %.4f\n" % clo2_prauc)
+            f.write(" dgr:  %.4f\n" % dgr_prauc)
+    return rg, cn_rocauc, aa_rocauc, ra_rocauc, clo1_rocauc, clo2_rocauc, dgr_rocauc, \
+           cn_prauc, aa_prauc, ra_prauc, clo1_prauc, clo2_prauc, dgr_prauc
 
 
 # compare with 4 feature sets:
