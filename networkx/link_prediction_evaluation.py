@@ -129,7 +129,6 @@ def link_pred_directed_network(G, filename="", print_on=True, sample_time=5, sam
             f.write(" ecci: %.4f\n" % clo2_rocauc)
             f.write(" dgr:  %.4f\n" % dgr_rocauc)
             f.write("PR-AUC:\n")
-            f.write(" rg:   %.4f\n" % rg)
             f.write(" cn:   %.4f\n" % cn_prauc)
             f.write(" aa:   %.4f\n" % aa_prauc)
             f.write(" ra:   %.4f\n" % ra_prauc)
