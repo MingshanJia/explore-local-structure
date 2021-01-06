@@ -5,7 +5,7 @@ from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import homogeneity_score, completeness_score, v_measure_score, accuracy_score
 from sklearn.tree import DecisionTreeClassifier
 
-__all__ = ['classify_networks']
+__all__ = ['classify_networks', 'classify_networks_supervised_loo']
 
 def classify_networks(data, labels, repeat=1000):
     data = scale(data)
@@ -30,8 +30,9 @@ def classify_networks(data, labels, repeat=1000):
     return model, homo, compl, v_measure
 
 
-def classify_networks_supervised_loo(X, y_true, repeat, model='tree'):
+def classify_networks_supervised_loo(X, y_true, repeat=100, model='tree'):
     l = len(y_true)
+    assert(np.shape(X)[0] == l)
     y_pred = np.zeros((l,), dtype=int)
     acc = 0
     loo = LeaveOneOut()
