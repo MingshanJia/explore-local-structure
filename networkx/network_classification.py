@@ -30,11 +30,12 @@ def classify_networks(data, labels, repeat=1000):
     return model, homo, compl, v_measure
 
 
-def classify_networks_supervised_loo(X, y_true, repeat=100, model='tree'):
+def classify_networks_supervised_loo(X, y_true, repeat=1000, model='tree'):
     l = len(y_true)
     assert(np.shape(X)[0] == l)
     y_pred = np.zeros((l,), dtype=int)
-    acc = 0
+    acc_all = 0
+    acc_best = 0
     loo = LeaveOneOut()
     for n in range(0, repeat):
         for train_index, test_index in loo.split(X):
@@ -44,5 +45,10 @@ def classify_networks_supervised_loo(X, y_true, repeat=100, model='tree'):
             clf.fit(X_train,y_train)
             y_pred_i = clf.predict(X_test)
             y_pred[test_index] = y_pred_i
-        acc += accuracy_score(y_true, y_pred)
-    return acc / repeat
+        acc = accuracy_score(y_true, y_pred)
+        acc_all += acc
+        if acc > acc_best:
+            acc_best = acc
+            y_pred_best = y_pred
+            model_best = clf
+    return acc_all / repeat, acc_best, y_pred_best, model_best.feature_importances_
