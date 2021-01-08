@@ -30,25 +30,40 @@ def classify_networks(data, labels, repeat=1000):
     return model, homo, compl, v_measure
 
 
-def classify_networks_supervised_loo(X, y_true, repeat=1000, model='tree'):
+def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
     l = len(y_true)
     assert(np.shape(X)[0] == l)
     y_pred = np.zeros((l,), dtype=int)
     acc_all = 0
     acc_best = 0
+    FI_all = np.zeros(np.shape(X)[1])
     loo = LeaveOneOut()
     for n in range(0, repeat):
         for train_index, test_index in loo.split(X):
             X_train, X_test = X[train_index], X[test_index]
             y_train, y_test = y_true[train_index], y_true[test_index]
-            clf = DecisionTreeClassifier()
-            clf.fit(X_train,y_train)
-            y_pred_i = clf.predict(X_test)
+            model_i = model
+            model_i.fit(X_train,y_train)
+            y_pred_i = model_i.predict(X_test)
             y_pred[test_index] = y_pred_i
         acc = accuracy_score(y_true, y_pred)
         acc_all += acc
         if acc > acc_best:
             acc_best = acc
             y_pred_best = y_pred
-            model_best = clf
-    return acc_all / repeat, acc_best, y_pred_best, model_best.feature_importances_
+
+        # calculating average feature importance
+        model_n = model
+        model_n.fit(X, y_true)
+        FI_n = model_n.feature_importances_
+        FI_all = FI_all + FI_n
+
+    acc_avg = acc_all / repeat
+    FI_avg = FI_all / repeat
+    print("Average Accuracy: {}\n".format(acc_avg))
+    print("Best Accuracy: {}\n".format(acc_best))
+    print("Best Prediction: {}\n".format(y_pred_best))
+    print("Average FI: {}\n".format(FI_avg))
+
+    return acc_avg, acc_best, y_pred_best, FI_avg
+
