@@ -4,10 +4,11 @@ import numpy as np
 from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import homogeneity_score, completeness_score, v_measure_score, accuracy_score
 from sklearn.tree import DecisionTreeClassifier
+from tqdm import tqdm
 
-__all__ = ['classify_networks', 'classify_networks_supervised_loo']
+__all__ = ['classify_networks_unsupervised', 'classify_networks_supervised_loo']
 
-def classify_networks(data, labels, repeat=1000):
+def classify_networks_unsupervised(data, labels, repeat=1000):
     data = scale(data)
     n_cluster = len(np.unique(labels))
     homo = 0
@@ -36,9 +37,10 @@ def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
     y_pred = np.zeros((l,), dtype=int)
     acc_all = 0
     acc_best = 0
+    y_pred_best = np.zeros((l,), dtype=int)
     FI_all = np.zeros(np.shape(X)[1])
     loo = LeaveOneOut()
-    for n in range(0, repeat):
+    for n in tqdm(range(repeat)):
         for train_index, test_index in loo.split(X):
             X_train, X_test = X[train_index], X[test_index]
             y_train, y_test = y_true[train_index], y_true[test_index]
