@@ -3,10 +3,10 @@ from sklearn.preprocessing import scale
 import numpy as np
 from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import homogeneity_score, completeness_score, v_measure_score, accuracy_score
-from sklearn.tree import DecisionTreeClassifier
 from tqdm import tqdm
+from sklearn.base import clone
 
-__all__ = ['classify_networks_unsupervised', 'classify_networks_supervised_loo']
+__all__ = ['classify_networks_unsupervised', 'classify_networks_supervised_loo', 'dropcols_importances']
 
 def classify_networks_unsupervised(data, labels, repeat=1000):
     data = scale(data)
@@ -68,4 +68,41 @@ def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
     print("Average FI: {}\n".format(FI_avg))
 
     return acc_avg, acc_best, y_pred_best, FI_avg
+
+
+# baseline accuracy score is caculated using all features.
+# segs: features are grouped into several segments. For example, first segments contains 4 closure patterns, second segment contains 4 clustering features, etc
+# segs = 2, when 8 patterns are used, segs = 3 when 4 random features are added
+# then the features in one segment are excluded, fit into a model, and using LOO to caculate the accuracy score
+# result means accuracy decrease after removing each segment of features
+def dropcols_importances(X, y_true, model, segs=2, repeat=10):
+    loo = LeaveOneOut()
+    l = len(y_true)
+    r, c = np.shape(X)
+    y_pred = np.zeros((l,), dtype=int)
+    y_pred_dropcols = np.zeros((segs, r), dtype=int)
+    acc_baseline = 0
+    acc_dropcols = np.zeros((segs,), dtype=float)
+    for n in tqdm(range(repeat)):
+        for train_index, test_index in loo.split(X):
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y_true[train_index], y_true[test_index]
+            model_i = clone(model)
+            model_i.fit(X_train, y_train)
+            y_pred[test_index] = model_i.predict(X_test)
+            i = 0
+            for cols in np.split(np.arange(c), segs):
+                X_train_dropcols = np.delete(X_train, cols, 1)
+                X_test_dropcols = np.delete(X_test, cols, 1)
+                model_dropcols = clone(model)
+                model_dropcols.fit(X_train_dropcols, y_train)
+                y_pred_dropcols[i][test_index] = model_dropcols.predict(X_test_dropcols)
+                i = i + 1
+        acc_baseline += accuracy_score(y_true, y_pred)
+        for seg in range(segs):
+            acc_dropcols[seg] += accuracy_score(y_true, y_pred_dropcols[seg])
+    acc_baseline = acc_baseline / repeat
+    acc_dropcols = acc_dropcols / repeat
+    res = acc_baseline - acc_dropcols
+    return res
 
