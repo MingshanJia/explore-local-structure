@@ -33,12 +33,13 @@ def classify_networks_unsupervised(data, labels, repeat=1000):
 
 def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
     l = len(y_true)
-    assert(np.shape(X)[0] == l)
+    r, c = np.shape(X)
+    assert(r == l)
     y_pred = np.zeros((l,), dtype=int)
     acc_all = 0
     acc_best = 0
     y_pred_best = np.zeros((l,), dtype=int)
-    FI_all = np.zeros(np.shape(X)[1])
+    FI_all = np.zeros((repeat, c))
     loo = LeaveOneOut()
     for n in tqdm(range(repeat)):
         for train_index, test_index in loo.split(X):
@@ -54,21 +55,21 @@ def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
             acc_best = acc
             y_pred_best = y_pred
 
-        # calculating average feature importance
+        # calculating feature importance (no need for LOOCV)
         model_n = model
         model_n.fit(X, y_true)
         FI_n = model_n.feature_importances_
-        FI_all = FI_all + FI_n
-
+        print(FI_n)
+        FI_all[n] = FI_n
     acc_avg = acc_all / repeat
-    FI_avg = FI_all / repeat
+    FI_avg = np.mean(FI_all, axis=0)
+    FI_std = np.std(FI_all, axis=0)
     print("Average Accuracy: {}\n".format(acc_avg))
     print("Best Accuracy: {}\n".format(acc_best))
     print("Best Prediction: {}\n".format(y_pred_best))
-    print("Average FI: {}\n".format(FI_avg))
-
-    return acc_avg, acc_best, y_pred_best, FI_avg
-
+    print("FI Average: {}\n".format(FI_avg))
+    print("FI Std: {}\n".format(FI_std))
+    return acc_avg, acc_best, y_pred_best, FI_avg, FI_std
 
 # baseline accuracy score is caculated using all features.
 # segs: features are grouped into several segments. For example, first segments contains 4 closure patterns, second segment contains 4 clustering features, etc
