@@ -5,6 +5,7 @@ from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import homogeneity_score, completeness_score, v_measure_score, accuracy_score
 from tqdm import tqdm
 from sklearn.base import clone
+from sklearn.inspection import permutation_importance
 
 __all__ = ['classify_networks_unsupervised', 'classify_networks_supervised_loo', 'impurity_decrease_importances', 'dropcols_importances']
 
@@ -75,7 +76,22 @@ def impurity_decrease_importances(X, y_true, model, repeat=1000):
     FI_std = np.std(FI_all, axis=0)
     print("FI Average: {}\n".format(FI_avg))
     print("FI Std: {}\n".format(FI_std))
-    return FI_avg, FI_std
+    return FI_all, FI_avg, FI_std
+
+
+def permutation_importances(X, y_true, model, scoring='accuracy', model_repeat=100, permutation_repeat=5):
+    perm_imp_all = []
+    for n in tqdm(range(model_repeat)):
+        mod = model.fit(X, y_true)
+        perm_imp = permutation_importance(mod, X, y_true, scoring, permutation_repeat)
+        perm_imp_all.append(perm_imp['importances'])
+    FI_all = np.hstack(tuple(perm_imp_all))
+    FI_avg = np.mean(FI_all, axis=1)
+    FI_std = np.std(FI_all, axis=1)
+    print("FI Average: {}\n".format(FI_avg))
+    print("FI Std: {}\n".format(FI_std))
+    return FI_all, FI_avg, FI_std
+
 
 # baseline accuracy score is caculated using all features.
 # segs: features are grouped into several segments. For example, first segments contains 4 closure patterns, second segment contains 4 clustering features, etc
@@ -112,4 +128,3 @@ def dropcols_importances(X, y_true, model, segs=2, repeat=10):
     acc_dropcols = acc_dropcols / repeat
     res = acc_baseline - acc_dropcols
     return res
-
