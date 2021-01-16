@@ -7,7 +7,8 @@ from tqdm import tqdm
 from sklearn.base import clone
 from sklearn.inspection import permutation_importance
 
-__all__ = ['classify_networks_unsupervised', 'classify_networks_supervised_loo', 'impurity_decrease_importances', 'dropcols_importances']
+__all__ = ['classify_networks_unsupervised', 'classify_networks_supervised_loo', 'impurity_decrease_importances',
+           'dropcols_importances', 'permutation_importances']
 
 def classify_networks_unsupervised(data, labels, repeat=1000):
     data = scale(data)
