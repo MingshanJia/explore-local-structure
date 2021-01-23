@@ -293,13 +293,13 @@ def _directed_src_triangles_and_opentriads_iter(G, nodes=None):
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
             dj = len(jpreds) + len(jsuccs)
-            open_triads += 4 * (dj - 2)
+            open_triads += 2 * (dj - 2)
         for j in ((ipreds | isuccs) - (ipreds & isuccs)):
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
             dj = len(jpreds) + len(jsuccs)
-            open_triads += 2 * (dj - 1)
-
+            open_triads += (dj - 1)
+        print("Node{}: src_triangle:{}, OTE:{}\n".format(i, ts, open_triads))
         yield (i, ts, open_triads)
 
 # for tgt-clo
@@ -325,13 +325,13 @@ def _directed_tgt_triangles_and_opentriads_iter(G, nodes=None):
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
             dj = len(jpreds) + len(jsuccs)
-            open_triads += 4 * (dj - 2)
+            open_triads += 2 * (dj - 2)
         for j in ((ipreds | isuccs) - (ipreds & isuccs)):
             jpreds = set(G._pred[j]) - {j}
             jsuccs = set(G._succ[j]) - {j}
             dj = len(jpreds) + len(jsuccs)
-            open_triads += 2 * (dj - 1)
-
+            open_triads += (dj - 1)
+        print("Node{}: tgt_triangle:{}, OTE:{}\n".format(i, tt, open_triads))
         yield (i, tt, open_triads)
 
 
@@ -761,7 +761,7 @@ def closure(G, nodes=None, weight=None):
         else:
             td_iter = _directed_triangles_and_opentriads_iter(G, nodes)
 
-            closurec = {v: [0, 0, 0] if (ts == 0 and tt == 0) else [(ts + tt) / ot, ts / ot, tt / ot]
+            closurec = {v: [0, 0, 0] if (ts == 0 and tt == 0) else [(ts + tt) / ot, 2*ts / ot, 2*tt / ot]
                         for v, ts, tt, ot in td_iter}
 
     # undirected:
