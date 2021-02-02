@@ -135,8 +135,8 @@ def get_eight_patterns_df(G):
     for k, v in patterns.items():
         node_eight_patterns.append([k, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]])
     node_eight_patterns_df = pd.DataFrame(node_eight_patterns,
-                                       columns=['node-id', 'E-head', 'E-end', 'E-mid', 'E-cyc', 'C-head',
-                                                'C-end', 'C-mid', 'C-cyc'])
+                                       columns=['node-id', '$E^{head}$', '$E^{end}$', '$E^{mid}$', '$E^{cyc}$',
+                                                '$C^{head}$', '$C^{end}$', '$C^{mid}$', '$C^{cyc}$'])
     return node_eight_patterns_df
 
 
