@@ -1,7 +1,7 @@
 import networkx as nx
 import pandas as pd
 
-__all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_network_info', 'get_cc_ce_df', 'get_eight_patterns_df']
+__all__ = ['average_normalized_patterns_app', 'get_key_info', 'get_network_info', 'get_cc_ce_df', 'get_ce_wce_df', 'get_eight_patterns_df']
 
 
 def get_key_info(G, filename="", weight=None):
@@ -128,6 +128,18 @@ def get_cc_ce_df(G, weight = None):
     return df_cc_ce
 
 
+# node, closure, weighted closure
+def get_ce_wce_df(G):
+    ce= nx.closure(G, weight = None)
+    wce = nx.closure(G, weight = 'weight')
+    node_ce_wce = []
+    for k, v1, v2 in common_entries(ce, wce):
+        node_ce_wce.append([k, v1[0], v2[0]])
+    node_ce_wce = sorted(node_ce_wce, key=lambda t:t[1])
+    node_ce_wce = pd.DataFrame(node_ce_wce, columns=['node-id','closure', 'weighted-closure'])
+    return node_ce_wce
+
+
 # for directed and unweighted networks
 def get_eight_patterns_df(G):
     patterns = nx.eight_patterns(G)
@@ -135,8 +147,8 @@ def get_eight_patterns_df(G):
     for k, v in patterns.items():
         node_eight_patterns.append([k, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]])
     node_eight_patterns_df = pd.DataFrame(node_eight_patterns,
-                                       columns=['node-id', '$E^{head}$', '$E^{end}$', '$E^{mid}$', '$E^{cyc}$',
-                                                '$C^{head}$', '$C^{end}$', '$C^{mid}$', '$C^{cyc}$'])
+                                       columns=['node-id', '$E^{head}(i)$', '$E^{end}(i)$', '$E^{mid}(i)$', '$E^{cyc}(i)$',
+                                                '$C^{head}(i)$', '$C^{end}(i)$', '$C^{mid}(i)$', '$C^{cyc}(i)$'])
     return node_eight_patterns_df
 
 

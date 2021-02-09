@@ -42,7 +42,7 @@ pages = {11--15}
 # These are import orderwise
 from networkx.link_prediction_evaluation import *
 from networkx.network_classification import *
-from networkx.patterns_evaluation import *
+from networkx.general_utils import *
 from networkx.TNSE_exp_utils import *
 
 from networkx.exception import *
