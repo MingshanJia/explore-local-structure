@@ -42,7 +42,7 @@ def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
     acc_all = 0
     acc_best = 0
     y_pred_best = np.zeros((l,), dtype=int)
-    matrices_all = np.zeros((r,c), dtype=int)
+    matrices_all = np.zeros((r//4,r//4), dtype=int)
     loo = LeaveOneOut()
     for n in tqdm(range(repeat)):
         for train_index, test_index in loo.split(X):
