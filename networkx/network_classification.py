@@ -3,6 +3,7 @@ from sklearn.preprocessing import scale
 import numpy as np
 from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import homogeneity_score, completeness_score, v_measure_score, accuracy_score
+from sklearn.metrics import confusion_matrix
 from tqdm import tqdm
 from sklearn.base import clone
 from sklearn.inspection import permutation_importance
@@ -41,6 +42,7 @@ def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
     acc_all = 0
     acc_best = 0
     y_pred_best = np.zeros((l,), dtype=int)
+    matrices_all = np.zeros((6,6), dtype=int)
     loo = LeaveOneOut()
     for n in tqdm(range(repeat)):
         for train_index, test_index in loo.split(X):
@@ -51,16 +53,21 @@ def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
             y_pred_i = model_i.predict(X_test)
             y_pred[test_index] = y_pred_i
         acc = accuracy_score(y_true, y_pred)
+        matrix = confusion_matrix(y_true, y_pred)
+        matrices_all += matrix
         acc_all += acc
         if acc > acc_best:
             acc_best = acc
             y_pred_best = y_pred
 
     acc_avg = acc_all / repeat
+    matrix_avg = matrices_all / repeat
+    print("Model: {}\n".format(model))
     print("Average Accuracy: {}\n".format(acc_avg))
+    print("Average Confusion Matrix: \n {}\n".format(matrix_avg))
     print("Best Accuracy: {}\n".format(acc_best))
     print("Best Prediction: {}\n".format(y_pred_best))
-    return acc_avg, acc_best, y_pred_best
+    return acc_avg, matrix_avg, acc_best, y_pred_best
 
 
 def impurity_decrease_importances(X, y_true, model, repeat=1000):
