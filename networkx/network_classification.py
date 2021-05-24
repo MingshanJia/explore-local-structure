@@ -8,8 +8,8 @@ from tqdm import tqdm
 from sklearn.base import clone
 from sklearn.inspection import permutation_importance
 
-__all__ = ['classify_networks_unsupervised', 'classify_networks_supervised_loo', 'impurity_decrease_importances',
-           'dropcols_importances', 'permutation_importances']
+__all__ = ['classify_networks_unsupervised', 'classify_networks_supervised_loo', 'classify_networks_loo_add_random_features',
+           'impurity_decrease_importances', 'dropcols_importances', 'permutation_importances']
 
 def classify_networks_unsupervised(data, labels, repeat=1000):
     data = scale(data)
@@ -70,6 +70,31 @@ def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
     print("Best Accuracy: {}\n".format(acc_best))
     print("Best Prediction: {}\n".format(y_pred_best))
     return acc_all, acc_avg, matrix_avg, acc_best, y_pred_best
+
+
+# X = X[:, 4:] is using clustering patterns, then add 4 random features
+def classify_networks_loo_add_random_features(X, y_true, model, repeat_random=1000):
+    l = len(y_true)
+    r, c = np.shape(X)
+    assert (r == l)
+    acc_all = []
+
+    for i in tqdm(range(repeat_random)):
+        y_pred = np.zeros((l,), dtype=int)
+        loo = LeaveOneOut()
+        # add random features for significance test
+        random_columns = np.random.rand(len(X), 4)
+        data_add_random = np.hstack((X, random_columns))
+        for train_index, test_index in loo.split(data_add_random):
+            X_train, X_test = data_add_random[train_index], data_add_random[test_index]
+            y_train, y_test = y_true[train_index], y_true[test_index]
+            model_i = model
+            model_i.fit(X_train, y_train)
+            y_pred_i = model_i.predict(X_test)
+            y_pred[test_index] = y_pred_i
+        acc = accuracy_score(y_true, y_pred)
+        acc_all.append(acc)
+    return acc_all
 
 
 def impurity_decrease_importances(X, y_true, model, repeat=1000):
