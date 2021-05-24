@@ -39,7 +39,8 @@ def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
     r, c = np.shape(X)
     assert(r == l)
     y_pred = np.zeros((l,), dtype=int)
-    acc_all = 0
+    acc_total = 0
+    acc_all = []
     acc_best = 0
     y_pred_best = np.zeros((l,), dtype=int)
     matrices_all = np.zeros((r//4,r//4), dtype=int)
@@ -53,21 +54,22 @@ def classify_networks_supervised_loo(X, y_true, model, repeat=1000):
             y_pred_i = model_i.predict(X_test)
             y_pred[test_index] = y_pred_i
         acc = accuracy_score(y_true, y_pred)
+        acc_all.append(acc)
         matrix = confusion_matrix(y_true, y_pred)
         matrices_all += matrix
-        acc_all += acc
+        acc_total += acc
         if acc > acc_best:
             acc_best = acc
             y_pred_best = y_pred
 
-    acc_avg = acc_all / repeat
+    acc_avg = acc_total / repeat
     matrix_avg = matrices_all / repeat
     print("Model: {}\n".format(model))
     print("Average Accuracy: {}\n".format(acc_avg))
     print("Average Confusion Matrix: \n {}\n".format(matrix_avg))
     print("Best Accuracy: {}\n".format(acc_best))
     print("Best Prediction: {}\n".format(y_pred_best))
-    return acc_avg, matrix_avg, acc_best, y_pred_best
+    return acc_all, acc_avg, matrix_avg, acc_best, y_pred_best
 
 
 def impurity_decrease_importances(X, y_true, model, repeat=1000):
