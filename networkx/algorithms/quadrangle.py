@@ -339,95 +339,7 @@ def quadrangle_coefficient(G, nodes=None):
     return clustering
 
 
-def square_clustering_2(G, nodes=None):
-    r""" Compute the squares clustering coefficient for nodes.
-
-    Parameters
-    ----------
-    G : graph
-
-    nodes : container of nodes, optional (default=all nodes in G)
-       Compute clustering for nodes in this container.
-
-    Returns
-    -------
-    c4 : dictionary
-       A dictionary keyed by node with the square clustering coefficient value.
-
-    Examples
-    --------
-    >>> G=nx.complete_graph(5)
-    >>> print(nx.square_clustering(G,0))
-    1.0
-    >>> print(nx.square_clustering(G))
-    {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0}
-
-    Notes
-    -----
-    While :math:`C_3(v)` (triangle clustering) gives the probability that
-    two neighbors of node v are connected with each other, :math:`C_4(v)` is
-    the probability that two neighbors of node v share a common
-    neighbor different from v. This algorithm can be applied to both
-    bipartite and unipartite networks.
-
-    References
-    ----------
-    .. [1] Pedro G. Lind, Marta C. González, and Hans J. Herrmann. 2005
-        Cycles and clustering in bipartite networks.
-        Physical Review E (72) 056127.
-       [2] Peng Zhang 2008
-        Clustering coefficient and community structure of bipartite networks
-
-    """
-    if nodes is None:
-        node_iter = G
-    else:
-        node_iter = G.nbunch_iter(nodes)
-    clustering = {}
-    for v in node_iter:
-        clustering[v] = 0
-        potential = 0
-        for u, w in combinations(G[v], 2):
-            squares = len((set(G[u]) & set(G[w])) - {v})
-            clustering[v] += squares
-            degm = squares + 1
-            if w in G[u]:
-                degm += 1
-            potential += (len(G[u]) - degm) + (len(G[w]) - degm) + squares  # changed multiply to addition
-        if potential > 0:
-            clustering[v] /= potential
-    if nodes in G:
-        # Return the value of the sole entry in the dictionary.
-        return clustering[nodes]
-    return clustering
-
-
-def square_clustering(G, nodes=None):
-
-    if nodes is None:
-        node_iter = G
-    else:
-        node_iter = G.nbunch_iter(nodes)
-    clustering = {}
-    for v in node_iter:
-        clustering[v] = 0
-        potential = 0
-        for u, w in combinations(G[v], 2):
-            squares = len((set(G[u]) & set(G[w])) - {v})
-            clustering[v] += squares
-            degm = squares + 1
-            if w in G[u]:
-                degm += 1
-            potential += (len(G[u]) - degm) * (len(G[w]) - degm) + squares  # changed multiply to addition
-        if potential > 0:
-            clustering[v] /= potential
-    if nodes in G:
-        # Return the value of the sole entry in the dictionary.
-        return clustering[nodes]
-    return clustering
-
-
-# another square clustering (problem : could larger than 1)
+#Higher order clustering: another square clustering 2002 (problem : could larger than 1)
 def order_two_clustering(G, nodes=None):
     """Paper: Higher-order clustering coefficients in barabasi–albert networks"""
 
@@ -450,3 +362,53 @@ def order_two_clustering(G, nodes=None):
         return clustering[nodes]
     return clustering
 
+
+# Pedro G. Lind, Marta C. González, and Hans J. Herrmann. 2005 Cycles and clustering in bipartite networks. Physical Review E (72) 056127.
+def square_clustering(G, nodes=None):
+
+    if nodes is None:
+        node_iter = G
+    else:
+        node_iter = G.nbunch_iter(nodes)
+    clustering = {}
+    for v in node_iter:
+        clustering[v] = 0
+        potential = 0
+        for u, w in combinations(G[v], 2):
+            squares = len((set(G[u]) & set(G[w])) - {v})
+            clustering[v] += squares
+            degm = squares + 1
+            if w in G[u]:
+                degm += 1
+            potential += (len(G[u]) - degm) * (len(G[w]) - degm) + squares
+        if potential > 0:
+            clustering[v] /= potential
+    if nodes in G:
+        # Return the value of the sole entry in the dictionary.
+        return clustering[nodes]
+    return clustering
+
+
+# Peng Zhang 2008 Clustering coefficient and community structure of bipartite networks
+def square_clustering_2(G, nodes=None):
+    if nodes is None:
+        node_iter = G
+    else:
+        node_iter = G.nbunch_iter(nodes)
+    clustering = {}
+    for v in node_iter:
+        clustering[v] = 0
+        potential = 0
+        for u, w in combinations(G[v], 2):
+            squares = len((set(G[u]) & set(G[w])) - {v})
+            clustering[v] += squares
+            degm = squares + 1
+            if w in G[u]:
+                degm += 1
+            potential += (len(G[u]) - degm) + (len(G[w]) - degm) + squares  # changed multiply to addition
+        if potential > 0:
+            clustering[v] /= potential
+    if nodes in G:
+        # Return the value of the sole entry in the dictionary.
+        return clustering[nodes]
+    return clustering
