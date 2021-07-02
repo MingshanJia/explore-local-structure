@@ -8,6 +8,7 @@ from networkx.algorithms.chordal import *
 from networkx.algorithms.cluster import *
 from networkx.algorithms.edge_clustering import *
 from networkx.algorithms.quadrangle import *
+from networkx.algorithms.graphlets import *
 from networkx.algorithms.clique import *
 from networkx.algorithms.communicability_alg import *
 from networkx.algorithms.components import *
