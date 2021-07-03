@@ -13,14 +13,14 @@ def graphlet_vector_ego(G, nodes=None):
 
     res = {}
     for i, i_nbrs in nodes_nbrs:
-        k = G.degree(i)
         vs = set(i_nbrs) - {i}
+        k = len(vs)
         gen_degree = Counter(len(vs & (set(G[w]) - {w})) for w in vs)
         T = sum(k * val for k, val in gen_degree.items()) // 2
 
         four_cycle_plus = 0
         four_clique = 0
-        for u, v, w in combinations(G[i], 3):
+        for u, v, w in combinations(vs, 3):
             if (w in (set(G[u]) - {u}) & (set(G[v]) - {v})):
                 four_cycle_plus += 1
             if (u in (set(G[w]) - {w}) & (set(G[v]) - {v})):
@@ -67,11 +67,9 @@ def four_cycle_plus(G, nodes=None):
     res = {}
     for v in node_iter:
         res[v] = 0
-
-        for u, w in combinations(G[v], 2):
-            squares = len(set(G[u]) & set(G[w]) & set(G[v]))
-            res[v] += squares
-
+        for u, w in combinations(set(G[v]) - {v}, 2):
+            tmp = len((set(G[u]) - {u}) & (set(G[w]) - {w}) & (set(G[v]) - {v}))
+            res[v] += tmp
     if nodes in G:
         return res[nodes]
     return res
@@ -85,16 +83,15 @@ def four_clique(G, nodes=None):
     res = {}
     for i in node_iter:
         res[i] = 0
-
-        for u, v, w in combinations(G[i], 3):
-            if (w in set(G[u]) & set(G[v])) and (u in set(G[v])):
+        for u, v, w in combinations(set(G[i]) - {i}, 3):
+            if (w in (set(G[u]) -{u}) & (set(G[v]) - {v})) and (u in (set(G[v]) - {v})):
                 res[i] += 1
     if nodes in G:
         return res[nodes]
     return res
 
 
-# another way of calculating 4-cycle+
+# obselete: another way of calculating 4-cycle+
 def four_cycle_plus_2(G, nodes=None):
     if nodes is None:
         nodes_nbrs = G.adj.items()
