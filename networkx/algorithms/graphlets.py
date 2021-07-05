@@ -1,11 +1,93 @@
 from itertools import combinations
 from collections import Counter
 
-__all__ = ['graphlet_vector_ego', 'three_wedge', 'four_clique', 'four_cycle_plus', 'four_cycle_plus_2']
+__all__ = ['typed_edge_graphlet_degree_vector_ego', 'graphlet_degree_vector_ego', 'three_wedge', 'four_clique',
+           'four_cycle_plus', 'four_cycle_plus_2']
 
 
-# GV = [2-clique, 2-wedge, 3-clique, 3-star, 3-wedge, 4-cycle+, 4-clique]
-def graphlet_vector_ego(G, nodes=None):
+# TyE-GDV : GDV with edge type information, returning a 7*num_type 2D list
+# note that the type of edges not incident to ego node is not considered
+# because there is no such information in the targeted dataset.
+# TODO: take all edges of graphlets into consideration
+def typed_edge_graphlet_degree_vector_ego(G, num_type, nodes=None):
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    res = {}
+    for i, i_nbrs in nodes_nbrs:
+        vec = [[0] * num_type for _ in range(7)]  # 7 ego-centric graphlets by number of types of edges
+        inbrs = set(i_nbrs) - {i}
+
+        # 2-clique, this is also the classic
+        for u in inbrs:
+            iu_type = G.get_edge_data(i, u)['edge_type']
+            edit_vec(vec, 0, iu_type, None, None)
+
+        # 3-node graphlets
+        for u, v in combinations(inbrs, 2):
+            u_nbrs = set(G[u]) - {u}
+            iu_type = G.get_edge_data(i, u)['edge_type']
+            iv_type = G.get_edge_data(i, v)['edge_type']
+
+            # 2-path
+            edit_vec(vec, 1, iu_type, iv_type, None)
+
+            # 3-clique
+            if v in u_nbrs:
+                edit_vec(vec, 2, iu_type, iv_type, None)
+
+                # 4-node graphlets
+        for u, v, w in combinations(inbrs, 3):
+            u_nbrs = set(G[u]) - {u}
+            v_nbrs = set(G[v]) - {v}
+            w_nbrs = set(G[w]) - {w}
+            iu_type = G.get_edge_data(i, u)['edge_type']
+            iv_type = G.get_edge_data(i, v)['edge_type']
+            iw_type = G.get_edge_data(i, w)['edge_type']
+
+            # 3-star
+            edit_vec(vec, 3, iu_type, iv_type, iw_type)
+
+            # tailed-tri
+            if w in u_nbrs:
+                edit_vec(vec, 4, iu_type, iv_type, iw_type)
+            if v in w_nbrs:
+                edit_vec(vec, 4, iu_type, iv_type, iw_type)
+            if v in u_nbrs:
+                edit_vec(vec, 4, iu_type, iv_type, iw_type)
+
+            # 4-cycle+
+            if w in u_nbrs & v_nbrs:
+                edit_vec(vec, 5, iu_type, iv_type, iw_type)
+            if u in w_nbrs & v_nbrs:
+                edit_vec(vec, 5, iu_type, iv_type, iw_type)
+            if v in u_nbrs & w_nbrs:
+                edit_vec(vec, 5, iu_type, iv_type, iw_type)
+
+            # 4-clique
+            if (w in u_nbrs & v_nbrs) and (u in v_nbrs):
+                edit_vec(vec, 6, iu_type, iv_type, iw_type)
+
+        res[i] = vec
+    if nodes in G:
+        return res[nodes]
+    return res
+
+
+# edge type is coded from 1, edges without type information is coded as 0.
+def edit_vec(vec, idx, link_1, link_2, link_3):
+    if int(link_1) > 0:
+        vec[idx][int(link_1) - 1] += 1
+    if link_2 != None and int(link_2) > 0:
+        vec[idx][int(link_2) - 1] += 1
+    if link_3 != None and int(link_3) > 0:
+        vec[idx][int(link_3) - 1] += 1
+
+
+# Ego-GDV = [2-clique, 2-wedge, 3-clique, 3-star, 3-wedge, 4-cycle+, 4-clique]
+def graphlet_degree_vector_ego(G, nodes=None):
     if nodes is None:
         nodes_nbrs = G.adj.items()
     else:
