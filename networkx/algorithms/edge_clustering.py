@@ -67,7 +67,7 @@ def edge_clustering_vector(G, nodes=None, edges=None):
                 type_list[11].append((u, v))
             if data.get('edge_type') == '13':
                 type_list[12].append((u, v))
-        print(type_list)
+        # print(type_list)
         for k in range(13):
             if len(type_list[k]) != 0:
                 vec[k] = average_edge_clustering(G, edges=type_list[k])
