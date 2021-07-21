@@ -7,7 +7,7 @@ from networkx.utils import not_implemented_for
 
 __all__ = ['quadrangle_coefficient_iter', 'global_quadrangle', 'number_of_quadrangles', 'square_clustering', 'order_two_clustering',
            'square_clustering_2', 'quadrangle_coefficient', 'inner_quadrangle_coefficient','outer_quadrangle_coefficient',
-           'iquad_oquad_coefs','quad_iquad_oquad', 'average_inner_quad_co', 'average_outer_quad_co', 'average_inner_and_outer_quad_co']
+           'iquad_oquad_coefs','quad_iquad_oquad', 'average_inner_quad_co', 'average_outer_quad_co', 'average_inner_and_outer_quad_co', 'primary_grid_coef']
 
 
 # **************************************************************************** Quadrangle Coefficient ************************************************************
@@ -412,3 +412,28 @@ def square_clustering_2(G, nodes=None):
         # Return the value of the sole entry in the dictionary.
         return clustering[nodes]
     return clustering
+
+
+def primary_grid_coef(G, nodes=None):
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+    res = {}
+    for i, i_nbrs in nodes_nbrs:
+        res[i] = 0
+        four_cycle_plus = 0
+        vs = set(i_nbrs) - {i}
+        k = len(vs)
+
+        for u, v, w in combinations(vs, 3):
+            if (w in (set(G[u]) - {u}) & (set(G[v]) - {v})):
+                four_cycle_plus += 1
+            if (u in (set(G[w]) - {w}) & (set(G[v]) - {v})):
+                four_cycle_plus += 1
+            if (v in (set(G[u]) - {u}) & (set(G[w]) - {w})):
+                four_cycle_plus += 1
+        if k > 2:
+            val = 2 * four_cycle_plus / (k * (k - 1) * (k - 2))
+            res[i] = val
+    return res
