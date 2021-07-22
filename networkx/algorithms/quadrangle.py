@@ -7,7 +7,8 @@ from networkx.utils import not_implemented_for
 
 __all__ = ['quadrangle_coefficient_iter', 'global_quadrangle', 'number_of_quadrangles', 'square_clustering', 'order_two_clustering',
            'square_clustering_2', 'quadrangle_coefficient', 'inner_quadrangle_coefficient','outer_quadrangle_coefficient',
-           'iquad_oquad_coefs','quad_iquad_oquad', 'average_inner_quad_co', 'average_outer_quad_co', 'average_inner_and_outer_quad_co', 'primary_grid_coef']
+           'iquad_oquad_coefs','quad_iquad_oquad', 'average_inner_quad_co', 'average_outer_quad_co', 'average_inner_and_outer_quad_co',
+           'order_three_clustering_coef','primary_grid_coef']
 
 
 # **************************************************************************** Quadrangle Coefficient ************************************************************
@@ -437,3 +438,30 @@ def primary_grid_coef(G, nodes=None):
             val = 2 * four_cycle_plus / (k * (k - 1) * (k - 2))
             res[i] = val
     return res
+
+
+# Defined in paper: Higher-order clustering in networks 2018
+def order_three_clustering_coef(G, nodes=None):
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+    res = {}
+    for i, i_nbrs in nodes_nbrs:
+        res[i] = 0
+        four_clique = 0
+        vs = set(i_nbrs) - {i}
+        k = len(vs)
+        gen_degree = Counter(len(vs & (set(G[w]) - {w})) for w in vs)
+        T = sum(k * val for k, val in gen_degree.items()) // 2
+        denominator = T * (k - 2)
+        for u, v, w in combinations(vs, 3):
+            if (w in (set(G[u]) - {u}) & (set(G[v]) - {v})) and (u in (set(G[v]) - {v})):
+                four_clique += 1
+
+        if denominator > 0:
+            val = 3 * four_clique / denominator
+            res[i] = val
+    return res
+
+
