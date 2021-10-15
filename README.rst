@@ -13,7 +13,7 @@ Explore Network Local Strucutre
 ------------------------------
 The code for computing directed closure coefficient and its patterns is located at https://github.com/MingshanJia/explore-local-structure/blob/master/networkx/algorithms/cluster.py
 
-    - Experiments: The code of all the experiments in our paper can be found in https://github.com/MingshanJia/explore-local-structure/tree/master/experiment_for_di-clo
+    - Experiments: The code of all the experiments in our paper can be found at https://github.com/MingshanJia/explore-local-structure/tree/master/experiment_for_di-clo
     - Datasets: The datasets used in the experiments is located at https://github.com/MingshanJia/explore-local-structure/tree/master/experiment_for_di-clo/datasets
 
 
@@ -23,5 +23,11 @@ The code for computing directed closure coefficient and its patterns is located 
 The code for computing the quadrangle coefficients is located at https://github.com/MingshanJia/explore-local-structure/blob/master/networkx/algorithms/quadrangle.py
 
     
-    - Experiments: The code of all the experiments in our paper can be found in https://github.com/MingshanJia/explore-local-structure/tree/master/experiments_for_quad
+    - Experiments: The code of all the experiments in our paper can be found at https://github.com/MingshanJia/explore-local-structure/tree/master/experiments_for_quad
     - Datasets: The datasets used in the experiments is located at https://github.com/MingshanJia/explore-local-structure/tree/master/experiments_for_quad/datasets
+
+3. TyE-GDV
+-----------------------
+The code for generating TyE-GDV is located at https://github.com/MingshanJia/explore-local-structure/blob/master/networkx/algorithms/graphlets.py
+
+    - Experiments: The code of all the experiments in our paper can be found at https://github.com/MingshanJia/explore-local-structure/tree/master/experiments_for_TyE-GDV
