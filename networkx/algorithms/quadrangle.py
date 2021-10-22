@@ -458,10 +458,13 @@ def order_three_clustering_coef(G, nodes=None):
         for u, v, w in combinations(vs, 3):
             if (w in (set(G[u]) - {u}) & (set(G[v]) - {v})) and (u in (set(G[v]) - {v})):
                 four_clique += 1
-
+    
         if denominator > 0:
             val = 3 * four_clique / denominator
             res[i] = val
+    
+    if nodes in G:
+        return res[nodes]
     return res
 
 
