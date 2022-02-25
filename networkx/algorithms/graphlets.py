@@ -1,8 +1,109 @@
 from itertools import combinations
 from collections import Counter
 
-__all__ = ['typed_edge_induced_graphlet_degree_vector_ego', 'typed_edge_graphlet_degree_vector_ego', 'induced_graphlet_degree_vector_ego', 'graphlet_degree_vector_ego', 'three_wedge', 'four_clique',
+__all__ = ['typed_edge_induced_graphlet_degree_vector_ego', 'typed_edge_graphlet_degree_vector_ego', 'induced_graphlet_degree_vector',
+           'induced_graphlet_degree_vector_ego', 'graphlet_degree_vector_ego', 'three_wedge', 'four_clique',
            'four_cycle_plus', 'four_cycle_plus_2']
+
+# taking into account all 15 orbits
+def induced_graphlet_degree_vector(G, nodes=None):
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    res = {}
+    for i, i_nbrs in nodes_nbrs:
+        inbrs = set(i_nbrs) - {i}
+
+        orbit_0 = len(inbrs)
+        # 3-node graphlets
+        orbit_1 = 0
+        orbit_2 = 0
+        orbit_3 = 0
+        # i-quad, o-quad, 4-cycle
+        orbit_4 = 0
+        orbit_5 = 0
+        orbit_8 = 0
+        # based on orbit 6
+        orbit_6 = 0
+        orbit_9 = 0
+        orbit_10 = 0
+        orbit_12 = 0
+        orbit_13 = 0
+        orbit_14 = 0
+        # based on orbit-7
+        orbit_7 = 0
+        orbit_11 = 0
+
+        for j in inbrs:
+            jnbrs = set(G[j]) - {j}
+
+            # orbit-2, orbit-3 (not here are two times of the actual number)
+            for k in inbrs - {j}:
+                if k not in jnbrs:
+                    orbit_2 += 1
+                else:
+                    orbit_3 += 1
+
+            for k in (jnbrs - {i}):
+                knbrs = set(G[k]) - {k}
+
+                # orbit-1
+                if i not in knbrs:
+                    orbit_1 += 1
+
+                # orbit-4, orbit-8
+                for l in (knbrs - {i} - {j}):
+                    if l not in inbrs and l not in jnbrs and k not in inbrs:
+                        orbit_4 += 1
+                    if l in inbrs and l not in jnbrs and k not in inbrs:
+                        orbit_8 += 1
+
+                # orbit-5
+                for l in (inbrs - {j}):
+                    if l not in jnbrs and l not in knbrs and k not in inbrs:
+                        orbit_5 += 1
+
+            # # based on orbit 6
+            for k, l in combinations((jnbrs - {i}), 2):
+                knbrs = set(G[k]) - {k}
+                lnbrs = set(G[l]) - {l}
+
+                if k not in inbrs and l not in inbrs and k not in lnbrs:
+                    orbit_6 += 1
+                if k not in inbrs and l not in inbrs and k in lnbrs:
+                    orbit_9 += 1
+                if (k in inbrs and k not in lnbrs and l not in inbrs) or (l in inbrs and l not in knbrs and k not in inbrs):
+                    orbit_10 += 1
+                if (k in lnbrs and l in inbrs and k not in inbrs) or (k in lnbrs and l not in inbrs and k in inbrs):
+                    orbit_12 += 1
+                if k in inbrs and l in inbrs and k not in lnbrs:
+                    orbit_13 += 1
+                if k in inbrs and l in inbrs and k in lnbrs:
+                    orbit_14 += 1
+
+        # orbit-7, orbit-11
+        for u, v, w in combinations(inbrs, 3):
+            u_nbrs = set(G[u]) - {u}
+            v_nbrs = set(G[v]) - {v}
+            w_nbrs = set(G[w]) - {w}
+
+            if (u not in v_nbrs) and (u not in w_nbrs) and (v not in w_nbrs):
+                orbit_7 += 1
+
+            if (w in u_nbrs) and (v not in w_nbrs) and (v not in u_nbrs):
+                orbit_11 += 1
+            if (v in u_nbrs) and (w not in v_nbrs) and (w not in u_nbrs):
+                orbit_11 += 1
+            if (w in v_nbrs) and (u not in w_nbrs) and (u not in v_nbrs):
+                orbit_11 += 1
+
+        vec = [orbit_0, orbit_1, orbit_2, orbit_3, orbit_4, orbit_5, orbit_6, orbit_7, orbit_8,
+               orbit_9, orbit_10, orbit_11, orbit_12, orbit_13, orbit_14]
+        res[i] = vec
+    return res
+
 
 
 # TyE-GDV : GDV with edge type information, returning a 7*num_type 2D list;
