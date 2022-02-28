@@ -39,7 +39,7 @@ def induced_graphlet_degree_vector(G, nodes=None):
         for j in inbrs:
             jnbrs = set(G[j]) - {j}
 
-            # orbit-2, orbit-3 (not here are two times of the actual number)
+            # orbit-2, orbit-3 are two times of the actual number
             for k in inbrs - {j}:
                 if k not in jnbrs:
                     orbit_2 += 1
@@ -57,6 +57,7 @@ def induced_graphlet_degree_vector(G, nodes=None):
                 for l in (knbrs - {i} - {j}):
                     if l not in inbrs and l not in jnbrs and k not in inbrs:
                         orbit_4 += 1
+                    # orbit-8 are two times of the actual number)
                     if l in inbrs and l not in jnbrs and k not in inbrs:
                         orbit_8 += 1
 
@@ -65,7 +66,7 @@ def induced_graphlet_degree_vector(G, nodes=None):
                     if l not in jnbrs and l not in knbrs and k not in inbrs:
                         orbit_5 += 1
 
-            # # based on orbit 6
+            # # based on orbit 6 (uninduced)
             for k, l in combinations((jnbrs - {i}), 2):
                 knbrs = set(G[k]) - {k}
                 lnbrs = set(G[l]) - {l}
@@ -76,10 +77,12 @@ def induced_graphlet_degree_vector(G, nodes=None):
                     orbit_9 += 1
                 if (k in inbrs and k not in lnbrs and l not in inbrs) or (l in inbrs and l not in knbrs and k not in inbrs):
                     orbit_10 += 1
+                # orbit-12 are two times of the actual number)
                 if (k in lnbrs and l in inbrs and k not in inbrs) or (k in lnbrs and l not in inbrs and k in inbrs):
                     orbit_12 += 1
                 if k in inbrs and l in inbrs and k not in lnbrs:
                     orbit_13 += 1
+                # orbit-14 are three times of the actual number)
                 if k in inbrs and l in inbrs and k in lnbrs:
                     orbit_14 += 1
 
@@ -99,8 +102,8 @@ def induced_graphlet_degree_vector(G, nodes=None):
             if (w in v_nbrs) and (u not in w_nbrs) and (u not in v_nbrs):
                 orbit_11 += 1
 
-        vec = [orbit_0, orbit_1, orbit_2, orbit_3, orbit_4, orbit_5, orbit_6, orbit_7, orbit_8,
-               orbit_9, orbit_10, orbit_11, orbit_12, orbit_13, orbit_14]
+        vec = [orbit_0, orbit_1, orbit_2//2, orbit_3//2, orbit_4, orbit_5, orbit_6, orbit_7, orbit_8//2,
+               orbit_9, orbit_10, orbit_11, orbit_12//2, orbit_13, orbit_14//3]
         res[i] = vec
     return res
 
