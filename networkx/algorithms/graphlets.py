@@ -1,7 +1,8 @@
 from itertools import combinations
 from collections import Counter
 
-__all__ = ['typed_edge_induced_graphlet_degree_vector_ego', 'typed_edge_graphlet_degree_vector_ego', 'induced_graphlet_degree_vector',
+__all__ = ['typed_edge_induced_graphlet_degree_vector_ego', 'typed_edge_graphlet_degree_vector_ego',
+           'induced_graphlet_degree_vector', 'typed_edge_induced_graphlet_degree_vector',
            'induced_graphlet_degree_vector_ego', 'graphlet_degree_vector_ego', 'three_wedge', 'four_clique',
            'four_cycle_plus', 'four_cycle_plus_2']
 
@@ -104,6 +105,133 @@ def induced_graphlet_degree_vector(G, nodes=None):
 
         vec = [orbit_0, orbit_1, orbit_2//2, orbit_3//2, orbit_4, orbit_5, orbit_6, orbit_7, orbit_8//2,
                orbit_9, orbit_10, orbit_11, orbit_12//2, orbit_13, orbit_14//3]
+        res[i] = vec
+    return res
+
+# extended version: taking into account all 15 orbits
+def typed_edge_induced_graphlet_degree_vector(G, num_type, nodes=None):
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    res = {}
+    for i, i_nbrs in nodes_nbrs:
+        inbrs = set(i_nbrs) - {i}
+        vec = [[0] * num_type for _ in range(15)]  # 15 graphlets by number of types of edges
+
+        for j in inbrs:
+            jnbrs = set(G[j]) - {j}
+            ij_type = G.get_edge_data(i, j)['edge_type']
+            edit_vec(vec, 0, ij_type)
+
+            # orbit-2, orbit-3 are two times of the actual number
+            for k in inbrs - {j}:
+                ik_type = G.get_edge_data(i, k)['edge_type']
+                if k not in jnbrs:
+                    edit_vec(vec, 2, ij_type, ik_type)
+                else:
+                    edit_vec(vec, 3, ij_type, ik_type)
+
+            for k in (jnbrs - {i}):
+                knbrs = set(G[k]) - {k}
+                jk_type = G.get_edge_data(j, k)['edge_type']
+
+                # orbit-1
+                if i not in knbrs:
+                    edit_vec(vec, 1, ij_type, jk_type)
+
+                # orbit-4, orbit-8
+                for l in (knbrs - {i} - {j}):
+                    kl_type = G.get_edge_data(l, k)['edge_type']
+                    if l not in inbrs and l not in jnbrs and k not in inbrs:
+                        edit_vec(vec, 4, ij_type, jk_type, kl_type)
+                    # orbit-8 are two times of the actual number)
+                    if l in inbrs and l not in jnbrs and k not in inbrs:
+                        edit_vec(vec, 8, ij_type, jk_type, kl_type)
+
+                # orbit-5
+                for l in (inbrs - {j}):
+                    il_type = G.get_edge_data(l, i)['edge_type']
+                    if l not in jnbrs and l not in knbrs and k not in inbrs:
+                        edit_vec(vec, 5, ij_type, jk_type, il_type)
+
+            # # based on orbit 6 (uninduced)
+            for k, l in combinations((jnbrs - {i}), 2):
+                knbrs = set(G[k]) - {k}
+                lnbrs = set(G[l]) - {l}
+                jk_type = G.get_edge_data(j, k)['edge_type']
+                jl_type = G.get_edge_data(j, l)['edge_type']
+
+                if k not in inbrs and l not in inbrs and k not in lnbrs:
+                    edit_vec(vec, 6, ij_type, jk_type, jl_type)
+
+                if k not in inbrs and l not in inbrs and k in lnbrs:
+                    kl_type = G.get_edge_data(l, k)['edge_type']
+                    edit_vec(vec, 9, ij_type, jk_type, jl_type, kl_type)
+
+                if k in inbrs and k not in lnbrs and l not in inbrs:
+                    ik_type = G.get_edge_data(i, k)['edge_type']
+                    edit_vec(vec, 10, ij_type, jk_type, jl_type, ik_type)
+                if l in inbrs and l not in knbrs and k not in inbrs:
+                    il_type = G.get_edge_data(i, l)['edge_type']
+                    edit_vec(vec, 10, ij_type, jk_type, jl_type, il_type)
+
+                # orbit-12 are two times of the actual number)
+                if k in lnbrs:
+                    kl_type = G.get_edge_data(l, k)['edge_type']
+                    if l in inbrs and k not in inbrs:
+                        il_type = G.get_edge_data(i, l)['edge_type']
+                        edit_vec(vec, 12, ij_type, jk_type, jl_type, kl_type, il_type)
+                    if l not in inbrs and k in inbrs:
+                        ik_type = G.get_edge_data(i, k)['edge_type']
+                        edit_vec(vec, 12, ij_type, jk_type, jl_type, kl_type, ik_type)
+
+                if k in inbrs and l in inbrs and k not in lnbrs:
+                    il_type = G.get_edge_data(i, l)['edge_type']
+                    ik_type = G.get_edge_data(i, k)['edge_type']
+                    edit_vec(vec, 13, ij_type, jk_type, jl_type, il_type, ik_type)
+                # orbit-14 are three times of the actual number)
+                if k in inbrs and l in inbrs and k in lnbrs:
+                    il_type = G.get_edge_data(i, l)['edge_type']
+                    ik_type = G.get_edge_data(i, k)['edge_type']
+                    kl_type = G.get_edge_data(l, k)['edge_type']
+                    edit_vec(vec, 14, ij_type, jk_type, jl_type, kl_type, il_type, ik_type)
+
+        # orbit-7, orbit-11
+        for u, v, w in combinations(inbrs, 3):
+            u_nbrs = set(G[u]) - {u}
+            v_nbrs = set(G[v]) - {v}
+            w_nbrs = set(G[w]) - {w}
+            iu_type = G.get_edge_data(i, u)['edge_type']
+            iv_type = G.get_edge_data(i, v)['edge_type']
+            iw_type = G.get_edge_data(i, w)['edge_type']
+
+            if (u not in v_nbrs) and (u not in w_nbrs) and (v not in w_nbrs):
+                edit_vec(vec, 7, iu_type, iv_type, iw_type)
+
+            if (w in u_nbrs) and (v not in w_nbrs) and (v not in u_nbrs):
+                wu_type = G.get_edge_data(w, u)['edge_type']
+                edit_vec(vec, 11, iu_type, iv_type, iw_type, wu_type)
+            if (v in u_nbrs) and (w not in v_nbrs) and (w not in u_nbrs):
+                vu_type = G.get_edge_data(v, u)['edge_type']
+                edit_vec(vec, 11, iu_type, iv_type, iw_type, vu_type)
+            if (w in v_nbrs) and (u not in w_nbrs) and (u not in v_nbrs):
+                wv_type = G.get_edge_data(w, v)['edge_type']
+                edit_vec(vec, 11, iu_type, iv_type, iw_type, wv_type)
+
+        # vec = [orbit_0, orbit_1, orbit_2//2, orbit_3//2, orbit_4, orbit_5, orbit_6, orbit_7, orbit_8//2,
+        #        orbit_9, orbit_10, orbit_11, orbit_12//2, orbit_13, orbit_14//3]
+
+        # deal with duplicated count:
+        for x in range(len(vec)):
+            if x == 2 or x == 3 or x == 8 or x == 12:
+                for y in range(len(vec[x])):
+                    vec[x][y] //= 2
+            if x == 14:
+                for y in range(len(vec[x])):
+                    vec[x][y] //= 3
+
         res[i] = vec
     return res
 
@@ -283,6 +411,20 @@ def edit_vec(vec, idx, link_1, link_2=None, link_3=None, link_4=None, link_5=Non
         vec[idx][int(link_5) - 1] += 1
     if link_6 != None and int(link_6) > 0:
         vec[idx][int(link_6) - 1] += 1
+
+def edit_1dvec(vec, link_1, link_2=None, link_3=None, link_4=None, link_5=None, link_6=None):
+    if int(link_1) > 0:
+        vec[int(link_1) - 1] += 1
+    if link_2 != None and int(link_2) > 0:
+        vec[int(link_2) - 1] += 1
+    if link_3 != None and int(link_3) > 0:
+        vec[int(link_3) - 1] += 1
+    if link_4 != None and int(link_4) > 0:
+        vec[int(link_4) - 1] += 1
+    if link_5 != None and int(link_5) > 0:
+        vec[int(link_5) - 1] += 1
+    if link_6 != None and int(link_6) > 0:
+        vec[int(link_6) - 1] += 1
 
 
 # Ego-GDV = [2-clique, 2-path, 3-clique, 3-star, tailed-tri, 4-chordal-cycle, 4-clique] (partial graphlet degree)
