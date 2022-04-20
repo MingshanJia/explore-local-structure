@@ -4,9 +4,115 @@ from collections import Counter
 __all__ = ['typed_edge_induced_graphlet_degree_vector_ego', 'typed_edge_graphlet_degree_vector_ego',
            'induced_graphlet_degree_vector', 'typed_edge_induced_graphlet_degree_vector',
            'induced_graphlet_degree_vector_ego', 'graphlet_degree_vector_ego', 'three_wedge', 'four_clique',
-           'four_cycle_plus', 'four_cycle_plus_2']
+           'four_cycle_plus', 'four_cycle_plus_2', 'induced_graphlet_degree_vector_v2']
+
+def induced_graphlet_degree_vector_v2(G, nodes=None):
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    res = {}
+    for i, i_nbrs in nodes_nbrs:
+        inbrs = set(i_nbrs) - {i}
+
+        orbit_0 = len(inbrs)
+        # 3-node graphlets
+        orbit_1 = 0
+        orbit_2 = 0
+        orbit_3 = 0
+        # i-quad, o-quad, 4-cycle
+        orbit_4 = 0
+        orbit_5 = 0
+        orbit_8 = 0
+        # based on orbit 6
+        orbit_6 = 0
+        orbit_9 = 0
+        orbit_10 = 0
+        orbit_12 = 0
+        orbit_13 = 0
+        orbit_14 = 0
+        # based on orbit-7
+        orbit_7 = 0
+        orbit_11 = 0
+
+        for j in inbrs:
+            jnbrs = set(G[j]) - {j}
+
+            # orbit-2, orbit-3 are two times of the actual number
+            for k in inbrs - {j}:
+                knbrs = set(G[k]) - {k}
+                if k not in jnbrs:
+                    orbit_2 += 1
+                else:
+                    orbit_3 += 1
+
+                # orbit 7 is six times the actual number
+                for l in inbrs - {j} - {k}:
+                    lnbrs = set(G[l]) - {l}
+                    if (j not in knbrs) and (j not in lnbrs) and (k not in lnbrs):
+                        orbit_7 += 1
+                    # orbit 11 is six times the actual number
+                    if (j in knbrs) and (l not in jnbrs) and (l not in knbrs):
+                        orbit_11 += 1
+                    if (l in knbrs) and (j not in lnbrs) and (j not in knbrs):
+                        orbit_11 += 1
+                    if (j in lnbrs) and (k not in jnbrs) and (k not in lnbrs):
+                        orbit_11 += 1
+
+            for k in (jnbrs - {i}):
+                knbrs = set(G[k]) - {k}
+
+                # orbit-1
+                if i not in knbrs:
+                    orbit_1 += 1
+
+                # orbit-4, orbit-8
+                for l in (knbrs - {i} - {j}):
+                    if l not in inbrs and l not in jnbrs and k not in inbrs:
+                        orbit_4 += 1
+                    # orbit-8 are two times of the actual number)
+                    if l in inbrs and l not in jnbrs and k not in inbrs:
+                        orbit_8 += 1
+
+                # orbit-5
+                for l in (inbrs - {j}):
+                    if l not in jnbrs and l not in knbrs and k not in inbrs:
+                        orbit_5 += 1
+
+                # based on orbit 6 (uninduced)
+                # orbit 6, 9, 10, 13 are counted twice
+                for l in jnbrs - {i} - {k}:
+                    lnbrs = set(G[l]) - {l}
+                    # orbit 6
+                    if k not in inbrs and l not in inbrs and k not in lnbrs:
+                        orbit_6 += 1
+                    # orbit 9
+                    if k not in inbrs and l not in inbrs and k in lnbrs:
+                        orbit_9 += 1
+                    # orbit 10
+                    if (k in inbrs and k not in lnbrs and l not in inbrs) or (
+                            l in inbrs and l not in knbrs and k not in inbrs):
+                        orbit_10 += 1
+                    # orbit 12 is counted 4 times!
+                    if (k in lnbrs and l in inbrs and k not in inbrs) or (k in lnbrs and l not in inbrs and k in inbrs):
+                        orbit_12 += 1
+                    # orbit #13
+                    if k in inbrs and l in inbrs and k not in lnbrs:
+                        orbit_13 += 1
+                    # orbit-14 is six times of the actual number)
+                    if k in inbrs and l in inbrs and k in lnbrs:
+                        orbit_14 += 1
+
+        vec = [orbit_0, orbit_1, orbit_2//2, orbit_3//2, orbit_4, orbit_5, orbit_6//2, orbit_7//6, orbit_8//2,
+               orbit_9//2, orbit_10//2, orbit_11//6, orbit_12//4, orbit_13//2, orbit_14//6]
+        res[i] = vec
+    return res
+
 
 # taking into account all 15 orbits
+# compare this with v_2, discuss the time complexity
+# use combination to avoid repetition
 def induced_graphlet_degree_vector(G, nodes=None):
     if nodes is None:
         nodes_nbrs = G.adj.items()
@@ -81,6 +187,7 @@ def induced_graphlet_degree_vector(G, nodes=None):
                 # orbit-12 are two times of the actual number)
                 if (k in lnbrs and l in inbrs and k not in inbrs) or (k in lnbrs and l not in inbrs and k in inbrs):
                     orbit_12 += 1
+                # orbit #13
                 if k in inbrs and l in inbrs and k not in lnbrs:
                     orbit_13 += 1
                 # orbit-14 are three times of the actual number)
