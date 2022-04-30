@@ -1,11 +1,13 @@
 from itertools import combinations
+from itertools import combinations_with_replacement
 from collections import Counter
 
 __all__ = ['typed_edge_induced_graphlet_degree_vector_ego', 'typed_edge_graphlet_degree_vector_ego',
            'induced_graphlet_degree_vector', 'typed_edge_induced_graphlet_degree_vector',
            'induced_graphlet_degree_vector_ego', 'graphlet_degree_vector_ego', 'three_wedge', 'four_clique',
            'four_cycle_plus', 'four_cycle_plus_2', 'induced_graphlet_degree_vector_v2',
-           'colored_graphlet_vector_for_typed_edge', 'colored_ego_graphlet_vector_for_typed_edge']
+           'colored_graphlet_vector_for_typed_edge', 'colored_ego_graphlet_vector_for_typed_edge',
+           'hetero_graphlet_vector_for_typed_edge', 'hetero_ego_graphlet_vector_for_typed_edge']
 
 # v_2 is implemented without using combination, and therefore include a lot of repetitions in calculation
 def induced_graphlet_degree_vector_v2(G, nodes=None):
@@ -975,3 +977,286 @@ def colored_ego_graphlet_vector_for_typed_edge(G, num_type, nodes=None):
     return res
 
 
+# Baseline implementation: heterogeneous graphlet (typed graphlet) approach for typed edge (2-4 node graphlets, 1 - 6 edges)
+def hetero_graphlet_vector_for_typed_edge(G, num_type, nodes=None):
+    type_list = list(range(1,num_type+1))
+    comb_1_edge = list(combinations_with_replacement(type_list, 1))
+    comb_2_edge = list(combinations_with_replacement(type_list, 2))
+    comb_3_edge = list(combinations_with_replacement(type_list, 3))
+    comb_4_edge = list(combinations_with_replacement(type_list, 4))
+    comb_5_edge = list(combinations_with_replacement(type_list, 5))
+    comb_6_edge = list(combinations_with_replacement(type_list, 6))
+
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    res = {}
+    for i, i_nbrs in nodes_nbrs:
+        inbrs = set(i_nbrs) - {i}
+        # initialise vec0 to vec14, each representing an orbit
+        vec_0 = [0] * len(comb_1_edge)
+        vec_1 = [0] * len(comb_2_edge)
+        vec_2 = [0] * len(comb_2_edge)
+        vec_3 = [0] * len(comb_3_edge)
+        vec_4 = [0] * len(comb_3_edge)
+        vec_5 = [0] * len(comb_3_edge)
+        vec_6 = [0] * len(comb_3_edge)
+        vec_7 = [0] * len(comb_3_edge)
+        vec_8 = [0] * len(comb_4_edge)
+        vec_9 = [0] * len(comb_4_edge)
+        vec_10 = [0] * len(comb_4_edge)
+        vec_11 = [0] * len(comb_4_edge)
+        vec_12 = [0] * len(comb_5_edge)
+        vec_13 = [0] * len(comb_5_edge)
+        vec_14 = [0] * len(comb_6_edge)
+
+        for j in inbrs:
+            jnbrs = set(G[j]) - {j}
+            ij_type = int(G.get_edge_data(i, j)['edge_type'])
+            t0 = (ij_type, )
+            vec_0[comb_1_edge.index(t0)] += 1
+
+            # orbit-2, orbit-3 are two times of the actual number
+            for k in inbrs - {j}:
+                ik_type = int(G.get_edge_data(i, k)['edge_type'])
+                if k not in jnbrs:
+                    t2 = tuple(sorted((ij_type, ik_type)))
+                    vec_2[comb_2_edge.index(t2)] += 1
+                else:
+                    jk_type = int(G.get_edge_data(j, k)['edge_type'])
+                    t3 = tuple(sorted((ij_type, ik_type, jk_type)))
+                    vec_3[comb_3_edge.index(t3)] += 1
+
+            for k in (jnbrs - {i}):
+                knbrs = set(G[k]) - {k}
+                jk_type = int(G.get_edge_data(j, k)['edge_type'])
+                t2 = tuple(sorted((ij_type, jk_type)))
+                # orbit-1
+                if i not in knbrs:
+                    vec_1[comb_2_edge.index(t2)] += 1
+
+                # orbit-4, orbit-8
+                for l in (knbrs - {i} - {j}):
+                    kl_type = int(G.get_edge_data(l, k)['edge_type'])
+                    if l not in inbrs and l not in jnbrs and k not in inbrs:
+                        t3 = tuple(sorted((ij_type, jk_type, kl_type)))
+                        vec_4[comb_3_edge.index(t3)] += 1
+                    # orbit-8 are two times of the actual number)
+                    if l in inbrs and l not in jnbrs and k not in inbrs:
+                        il_type = int(G.get_edge_data(i, l)['edge_type'])
+                        t4 = tuple(sorted((ij_type, jk_type, kl_type, il_type)))
+                        vec_8[comb_4_edge.index(t4)] += 1
+
+                # orbit-5
+                for l in (inbrs - {j}):
+                    il_type = int(G.get_edge_data(l, i)['edge_type'])
+                    t3 = tuple(sorted((ij_type, jk_type, il_type)))
+                    if l not in jnbrs and l not in knbrs and k not in inbrs:
+                        vec_5[comb_3_edge.index(t3)] += 1
+
+            # # based on orbit 6 (uninduced)
+            for k, l in combinations((jnbrs - {i}), 2):
+                knbrs = set(G[k]) - {k}
+                lnbrs = set(G[l]) - {l}
+                jk_type = int(G.get_edge_data(j, k)['edge_type'])
+                jl_type = int(G.get_edge_data(j, l)['edge_type'])
+
+                if k not in inbrs and l not in inbrs and k not in lnbrs:
+                    t3 = tuple(sorted((ij_type, jk_type, jl_type)))
+                    vec_6[comb_3_edge.index(t3)] += 1
+
+                if k not in inbrs and l not in inbrs and k in lnbrs:
+                    kl_type = int(G.get_edge_data(l, k)['edge_type'])
+                    t4 = tuple(sorted((ij_type, jk_type, jl_type, kl_type)))
+                    vec_9[comb_4_edge.index(t4)] += 1
+
+                if k in inbrs and k not in lnbrs and l not in inbrs:
+                    ik_type = int(G.get_edge_data(i, k)['edge_type'])
+                    t4 = tuple(sorted((ij_type, jk_type, jl_type, ik_type)))
+                    vec_10[comb_4_edge.index(t4)] += 1
+                if l in inbrs and l not in knbrs and k not in inbrs:
+                    il_type = int(G.get_edge_data(i, l)['edge_type'])
+                    t4 = tuple(sorted((ij_type, jk_type, jl_type, il_type)))
+                    vec_10[comb_4_edge.index(t4)] += 1
+
+                # orbit-12 are two times of the actual number)
+                if k in lnbrs:
+                    kl_type = int(G.get_edge_data(l, k)['edge_type'])
+                    if l in inbrs and k not in inbrs:
+                        il_type = int(G.get_edge_data(i, l)['edge_type'])
+                        t5 = tuple(sorted((ij_type, jk_type, jl_type, kl_type, il_type)))
+                        vec_12[comb_5_edge.index(t5)] += 1
+                    if l not in inbrs and k in inbrs:
+                        ik_type = int(G.get_edge_data(i, k)['edge_type'])
+                        t5 = tuple(sorted((ij_type, jk_type, jl_type, kl_type, ik_type)))
+                        vec_12[comb_5_edge.index(t5)] += 1
+
+                if k in inbrs and l in inbrs and k not in lnbrs:
+                    il_type = int(G.get_edge_data(i, l)['edge_type'])
+                    ik_type = int(G.get_edge_data(i, k)['edge_type'])
+                    t5 = tuple(sorted((ij_type, jk_type, jl_type, il_type, ik_type)))
+                    vec_13[comb_5_edge.index(t5)] += 1
+
+        # orbit-7, orbit-11, orbit-14
+        for u, v, w in combinations(inbrs, 3):
+            u_nbrs = set(G[u]) - {u}
+            v_nbrs = set(G[v]) - {v}
+            w_nbrs = set(G[w]) - {w}
+            iu_type = int(G.get_edge_data(i, u)['edge_type'])
+            iv_type = int(G.get_edge_data(i, v)['edge_type'])
+            iw_type = int(G.get_edge_data(i, w)['edge_type'])
+
+            if (u not in v_nbrs) and (u not in w_nbrs) and (v not in w_nbrs):
+                t3 = tuple(sorted((iu_type, iv_type, iw_type)))
+                vec_7[comb_3_edge.index(t3)] += 1
+
+            if (w in u_nbrs) and (v not in w_nbrs) and (v not in u_nbrs):
+                wu_type = int(G.get_edge_data(w, u)['edge_type'])
+                t4 = tuple(sorted((iu_type, iv_type, iw_type, wu_type)))
+                vec_11[comb_4_edge.index(t4)] += 1
+            if (v in u_nbrs) and (w not in v_nbrs) and (w not in u_nbrs):
+                vu_type = int(G.get_edge_data(v, u)['edge_type'])
+                t4 = tuple(sorted((iu_type, iv_type, iw_type, vu_type)))
+                vec_11[comb_4_edge.index(t4)] += 1
+            if (w in v_nbrs) and (u not in w_nbrs) and (u not in v_nbrs):
+                wv_type = int(G.get_edge_data(w, v)['edge_type'])
+                t4 = tuple(sorted((iu_type, iv_type, iw_type, wv_type)))
+                vec_11[comb_4_edge.index(t4)] += 1
+
+            if (w in v_nbrs) and (u in w_nbrs) and (u in v_nbrs):
+                wv_type = int(G.get_edge_data(w, v)['edge_type'])
+                wu_type = int(G.get_edge_data(w, u)['edge_type'])
+                vu_type = int(G.get_edge_data(v, u)['edge_type'])
+                t6 = tuple(sorted((iu_type, iv_type, iw_type, wv_type, wu_type, vu_type)))
+                vec_14[comb_6_edge.index(t6)] += 1
+
+        # deal with duplicated count:
+        vec_2 = [i // 2 for i in vec_2]
+        vec_3 = [i // 2 for i in vec_3]
+        vec_8 = [i // 2 for i in vec_8]
+        vec_12 = [i // 2 for i in vec_12]
+        vec = vec_0 + vec_1 + vec_2 + vec_3 + vec_4 + vec_5 + vec_6 + vec_7 + vec_8 + vec_9 + vec_10 + vec_11 + vec_12 + vec_13 + vec_14
+        res[i] = vec
+    return res
+
+
+# heterogeneous graphlet with typed edge for ego networks
+# Need to take into consideration, edges between alter nodes are of type 0.
+def hetero_ego_graphlet_vector_for_typed_edge(G, num_type, nodes=None):
+    type_list = list(range(1,num_type+1))
+    type_list_with_zero = list(range(0, num_type + 1))
+
+    # No zero allowed in 2-clique, 2-path, and 3-star
+    comb_1_edge = list(combinations_with_replacement(type_list, 1))
+    comb_2_edge = list(combinations_with_replacement(type_list, 2))
+    comb_3_edge = list(combinations_with_replacement(type_list, 3))
+
+    comb_with_zero_3_edge = list(combinations_with_replacement(type_list_with_zero, 3))
+    comb_with_zero_4_edge = list(combinations_with_replacement(type_list_with_zero, 4))
+    comb_with_zero_5_edge = list(combinations_with_replacement(type_list_with_zero, 5))
+    comb_with_zero_6_edge = list(combinations_with_replacement(type_list_with_zero, 6))
+    # only one zero allowed in triangle
+    comb_with_zero_3_edge = [x for x in comb_with_zero_3_edge if get_num_of_value(x, 0) <= 1]
+    # only one zero allowed in tailed-triangle
+    comb_with_zero_4_edge = [x for x in comb_with_zero_4_edge if get_num_of_value(x, 0) <= 1]
+    # only two zero allowed in 4-chordal-cycle
+    comb_with_zero_5_edge = [x for x in comb_with_zero_5_edge if get_num_of_value(x, 0) <= 2]
+    # only three zero allowed in 4-clique
+    comb_with_zero_6_edge = [x for x in comb_with_zero_6_edge if get_num_of_value(x, 0) <= 3]
+
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    res = {}
+    for i, i_nbrs in nodes_nbrs:
+        inbrs = set(i_nbrs) - {i}
+        # initialise vec0 to vec14, each representing an orbit
+        vec_0 = [0] * len(comb_1_edge)
+        vec_2 = [0] * len(comb_2_edge)
+        vec_3 = [0] * len(comb_with_zero_3_edge)
+        vec_7 = [0] * len(comb_3_edge)
+        vec_11 = [0] * len(comb_with_zero_4_edge)
+        vec_13 = [0] * len(comb_with_zero_5_edge)
+        vec_14 = [0] * len(comb_with_zero_6_edge)
+
+        for j in inbrs:
+            jnbrs = set(G[j]) - {j}
+            ij_type = int(G.get_edge_data(i, j)['edge_type'])
+            t0 = (ij_type, )
+            vec_0[comb_1_edge.index(t0)] += 1
+
+            # orbit-2, orbit-3 are two times of the actual number
+            for k in inbrs - {j}:
+                ik_type = int(G.get_edge_data(i, k)['edge_type'])
+                if k not in jnbrs:
+                    t2 = tuple(sorted((ij_type, ik_type)))
+                    vec_2[comb_2_edge.index(t2)] += 1
+                else:
+                    jk_type = int(G.get_edge_data(j, k)['edge_type'])
+                    t3 = tuple(sorted((ij_type, ik_type, jk_type)))
+                    vec_3[comb_with_zero_3_edge.index(t3)] += 1
+
+            # orbit-13
+            for k, l in combinations((jnbrs - {i}), 2):
+                knbrs = set(G[k]) - {k}
+                lnbrs = set(G[l]) - {l}
+                jk_type = int(G.get_edge_data(j, k)['edge_type'])
+                jl_type = int(G.get_edge_data(j, l)['edge_type'])
+
+                if k in inbrs and l in inbrs and k not in lnbrs:
+                    il_type = int(G.get_edge_data(i, l)['edge_type'])
+                    ik_type = int(G.get_edge_data(i, k)['edge_type'])
+                    t5 = tuple(sorted((ij_type, jk_type, jl_type, il_type, ik_type)))
+                    vec_13[comb_with_zero_5_edge.index(t5)] += 1
+
+        # orbit-7, orbit-11, orbit-14
+        for u, v, w in combinations(inbrs, 3):
+            u_nbrs = set(G[u]) - {u}
+            v_nbrs = set(G[v]) - {v}
+            w_nbrs = set(G[w]) - {w}
+            iu_type = int(G.get_edge_data(i, u)['edge_type'])
+            iv_type = int(G.get_edge_data(i, v)['edge_type'])
+            iw_type = int(G.get_edge_data(i, w)['edge_type'])
+
+            if (u not in v_nbrs) and (u not in w_nbrs) and (v not in w_nbrs):
+                t3 = tuple(sorted((iu_type, iv_type, iw_type)))
+                vec_7[comb_3_edge.index(t3)] += 1
+
+            if (w in u_nbrs) and (v not in w_nbrs) and (v not in u_nbrs):
+                wu_type = int(G.get_edge_data(w, u)['edge_type'])
+                t4 = tuple(sorted((iu_type, iv_type, iw_type, wu_type)))
+                vec_11[comb_with_zero_4_edge.index(t4)] += 1
+            if (v in u_nbrs) and (w not in v_nbrs) and (w not in u_nbrs):
+                vu_type = int(G.get_edge_data(v, u)['edge_type'])
+                t4 = tuple(sorted((iu_type, iv_type, iw_type, vu_type)))
+                vec_11[comb_with_zero_4_edge.index(t4)] += 1
+            if (w in v_nbrs) and (u not in w_nbrs) and (u not in v_nbrs):
+                wv_type = int(G.get_edge_data(w, v)['edge_type'])
+                t4 = tuple(sorted((iu_type, iv_type, iw_type, wv_type)))
+                vec_11[comb_with_zero_4_edge.index(t4)] += 1
+
+            if (w in v_nbrs) and (u in w_nbrs) and (u in v_nbrs):
+                wv_type = int(G.get_edge_data(w, v)['edge_type'])
+                wu_type = int(G.get_edge_data(w, u)['edge_type'])
+                vu_type = int(G.get_edge_data(v, u)['edge_type'])
+                t6 = tuple(sorted((iu_type, iv_type, iw_type, wv_type, wu_type, vu_type)))
+                vec_14[comb_with_zero_6_edge.index(t6)] += 1
+
+        vec_2 = [i // 2 for i in vec_2]
+        vec_3 = [i // 2 for i in vec_3]
+        vec = vec_0 + vec_2 + vec_3 + vec_7 + vec_11 + vec_13 + vec_14
+        res[i] = vec
+    return res
+
+
+# helper function for hetero_ego_graphlet_vector_for_typed_edge
+def get_num_of_value(T, value):
+    res = 0
+    for i in range(0, len(T)):
+        if T[i] == value:
+            res += 1
+    return res
