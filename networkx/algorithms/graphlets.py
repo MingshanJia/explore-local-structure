@@ -730,21 +730,21 @@ def colored_graphlet_vector_for_typed_edge(G, num_type, nodes=None):
     for i, i_nbrs in nodes_nbrs:
         inbrs = set(i_nbrs) - {i}
         # initialise vec0 to vec14, each representing an orbit
-        vec_0 = [0] * len(get_all_comb_from_list(type_list, 1))
-        vec_1 = [0] * len(get_all_comb_from_list(type_list, 2))
-        vec_2 = [0] * len(get_all_comb_from_list(type_list, 2))
-        vec_3 = [0] * len(get_all_comb_from_list(type_list, 3))
-        vec_4 = [0] * len(get_all_comb_from_list(type_list, 3))
-        vec_5 = [0] * len(get_all_comb_from_list(type_list, 3))
-        vec_6 = [0] * len(get_all_comb_from_list(type_list, 3))
-        vec_7 = [0] * len(get_all_comb_from_list(type_list, 3))
-        vec_8 = [0] * len(get_all_comb_from_list(type_list, 4))
-        vec_9 = [0] * len(get_all_comb_from_list(type_list, 4))
-        vec_10 = [0] * len(get_all_comb_from_list(type_list, 4))
-        vec_11 = [0] * len(get_all_comb_from_list(type_list, 4))
-        vec_12 = [0] * len(get_all_comb_from_list(type_list, 5))
-        vec_13 = [0] * len(get_all_comb_from_list(type_list, 5))
-        vec_14 = [0] * len(get_all_comb_from_list(type_list, 6))
+        vec_0 = [0] * len(comb_1_edge)
+        vec_1 = [0] * len(comb_2_edge)
+        vec_2 = [0] * len(comb_2_edge)
+        vec_3 = [0] * len(comb_3_edge)
+        vec_4 = [0] * len(comb_3_edge)
+        vec_5 = [0] * len(comb_3_edge)
+        vec_6 = [0] * len(comb_3_edge)
+        vec_7 = [0] * len(comb_3_edge)
+        vec_8 = [0] * len(comb_4_edge)
+        vec_9 = [0] * len(comb_4_edge)
+        vec_10 = [0] * len(comb_4_edge)
+        vec_11 = [0] * len(comb_4_edge)
+        vec_12 = [0] * len(comb_5_edge)
+        vec_13 = [0] * len(comb_5_edge)
+        vec_14 = [0] * len(comb_6_edge)
 
         for j in inbrs:
             jnbrs = set(G[j]) - {j}
@@ -898,13 +898,13 @@ def colored_ego_graphlet_vector_for_typed_edge(G, num_type, nodes=None):
     for i, i_nbrs in nodes_nbrs:
         inbrs = set(i_nbrs) - {i}
         # initialise vec0 to vec14, each representing an orbit
-        vec_0 = [0] * len(get_all_comb_from_list(type_list, 1))
-        vec_2 = [0] * len(get_all_comb_from_list(type_list, 2))
-        vec_3 = [0] * len(get_all_comb_from_list(type_list_with_zero, 3))
-        vec_7 = [0] * len(get_all_comb_from_list(type_list, 3))
-        vec_11 = [0] * len(get_all_comb_from_list(type_list_with_zero, 4))
-        vec_13 = [0] * len(get_all_comb_from_list(type_list_with_zero, 5))
-        vec_14 = [0] * len(get_all_comb_from_list(type_list_with_zero, 6))
+        vec_0 = [0] * len(comb_1_edge)
+        vec_2 = [0] * len(comb_2_edge)
+        vec_3 = [0] * len(comb_with_zero_3_edge)
+        vec_7 = [0] * len(comb_3_edge)
+        vec_11 = [0] * len(comb_4_edge)
+        vec_13 = [0] * len(comb_5_edge)
+        vec_14 = [0] * len(comb_6_edge)
 
         for j in inbrs:
             jnbrs = set(G[j]) - {j}
