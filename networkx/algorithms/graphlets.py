@@ -4,7 +4,8 @@ from collections import Counter
 __all__ = ['typed_edge_induced_graphlet_degree_vector_ego', 'typed_edge_graphlet_degree_vector_ego',
            'induced_graphlet_degree_vector', 'typed_edge_induced_graphlet_degree_vector',
            'induced_graphlet_degree_vector_ego', 'graphlet_degree_vector_ego', 'three_wedge', 'four_clique',
-           'four_cycle_plus', 'four_cycle_plus_2', 'induced_graphlet_degree_vector_v2', 'colored_graphlet_vector_for_typed_edge']
+           'four_cycle_plus', 'four_cycle_plus_2', 'induced_graphlet_degree_vector_v2',
+           'colored_graphlet_vector_for_typed_edge', 'colored_ego_graphlet_vector_for_typed_edge']
 
 # v_2 is implemented without using combination, and therefore include a lot of repetitions in calculation
 def induced_graphlet_degree_vector_v2(G, nodes=None):
@@ -191,11 +192,8 @@ def induced_graphlet_degree_vector(G, nodes=None):
                 # orbit #13
                 if k in inbrs and l in inbrs and k not in lnbrs:
                     orbit_13 += 1
-                # orbit-14 are three times of the actual number)
-                if k in inbrs and l in inbrs and k in lnbrs:
-                    orbit_14 += 1
 
-        # orbit-7, orbit-11
+        # orbit-7, orbit-11, orbit-14
         for u, v, w in combinations(inbrs, 3):
             u_nbrs = set(G[u]) - {u}
             v_nbrs = set(G[v]) - {v}
@@ -211,8 +209,11 @@ def induced_graphlet_degree_vector(G, nodes=None):
             if (w in v_nbrs) and (u not in w_nbrs) and (u not in v_nbrs):
                 orbit_11 += 1
 
+            if (w in v_nbrs) and (u in w_nbrs) and (u in v_nbrs):
+                orbit_14 += 1
+
         vec = [orbit_0, orbit_1, orbit_2//2, orbit_3//2, orbit_4, orbit_5, orbit_6, orbit_7, orbit_8//2,
-               orbit_9, orbit_10, orbit_11, orbit_12//2, orbit_13, orbit_14//3]
+               orbit_9, orbit_10, orbit_11, orbit_12//2, orbit_13, orbit_14]
         res[i] = vec
     return res
 
@@ -872,5 +873,105 @@ def colored_graphlet_vector_for_typed_edge(G, num_type, nodes=None):
         res[i] = vec
     return res
 
+# colored graphlet with typed edge for ego networks
+# Need to take into consideration, edges between alter nodes are of type 0.
+def colored_ego_graphlet_vector_for_typed_edge(G, num_type, nodes=None):
+    type_list = list(range(1,num_type+1))
+    type_list_with_zero = list(range(0, num_type + 1))
+
+    comb_1_edge = get_all_comb_from_list(type_list, 1)
+    comb_2_edge = get_all_comb_from_list(type_list, 2)
+    comb_3_edge = get_all_comb_from_list(type_list, 3)
+    comb_with_zero_3_edge = get_all_comb_from_list(type_list_with_zero, 3)
+    comb_4_edge = get_all_comb_from_list(type_list_with_zero, 4)
+    comb_5_edge = get_all_comb_from_list(type_list_with_zero, 5)
+    comb_6_edge = get_all_comb_from_list(type_list_with_zero, 6)
+
+    if nodes is None:
+        nodes_nbrs = G.adj.items()
+    else:
+        nodes_nbrs = ((n, G[n]) for n in G.nbunch_iter(nodes))
+
+    res = {}
+    for i, i_nbrs in nodes_nbrs:
+        inbrs = set(i_nbrs) - {i}
+        # initialise vec0 to vec14, each representing an orbit
+        vec_0 = [0] * len(get_all_comb_from_list(type_list, 1))
+        vec_2 = [0] * len(get_all_comb_from_list(type_list, 2))
+        vec_3 = [0] * len(get_all_comb_from_list(type_list_with_zero, 3))
+        vec_7 = [0] * len(get_all_comb_from_list(type_list, 3))
+        vec_11 = [0] * len(get_all_comb_from_list(type_list_with_zero, 4))
+        vec_13 = [0] * len(get_all_comb_from_list(type_list_with_zero, 5))
+        vec_14 = [0] * len(get_all_comb_from_list(type_list_with_zero, 6))
+
+        for j in inbrs:
+            jnbrs = set(G[j]) - {j}
+            ij_type = int(G.get_edge_data(i, j)['edge_type'])
+            t0 = (ij_type, )
+            vec_0[comb_1_edge.index(t0)] += 1
+
+            # orbit-2, orbit-3 are two times of the actual number
+            for k in inbrs - {j}:
+                ik_type = int(G.get_edge_data(i, k)['edge_type'])
+                if k not in jnbrs:
+                    t2 = tuple(sorted(set((ij_type, ik_type))))
+                    vec_2[comb_2_edge.index(t2)] += 1
+                else:
+                    jk_type = int(G.get_edge_data(j, k)['edge_type'])
+                    t3 = tuple(sorted(set((ij_type, ik_type, jk_type))))
+                    vec_3[comb_with_zero_3_edge.index(t3)] += 1
+
+            # orbit-13
+            for k, l in combinations((jnbrs - {i}), 2):
+                knbrs = set(G[k]) - {k}
+                lnbrs = set(G[l]) - {l}
+                jk_type = int(G.get_edge_data(j, k)['edge_type'])
+                jl_type = int(G.get_edge_data(j, l)['edge_type'])
+
+                if k in inbrs and l in inbrs and k not in lnbrs:
+                    il_type = int(G.get_edge_data(i, l)['edge_type'])
+                    ik_type = int(G.get_edge_data(i, k)['edge_type'])
+                    t5 = tuple(sorted(set((ij_type, jk_type, jl_type, il_type, ik_type))))
+                    vec_13[comb_5_edge.index(t5)] += 1
+
+        # orbit-7, orbit-11, orbit-14
+        for u, v, w in combinations(inbrs, 3):
+            u_nbrs = set(G[u]) - {u}
+            v_nbrs = set(G[v]) - {v}
+            w_nbrs = set(G[w]) - {w}
+            iu_type = int(G.get_edge_data(i, u)['edge_type'])
+            iv_type = int(G.get_edge_data(i, v)['edge_type'])
+            iw_type = int(G.get_edge_data(i, w)['edge_type'])
+
+            if (u not in v_nbrs) and (u not in w_nbrs) and (v not in w_nbrs):
+                t3 = tuple(sorted(set((iu_type, iv_type, iw_type))))
+                vec_7[comb_3_edge.index(t3)] += 1
+
+            if (w in u_nbrs) and (v not in w_nbrs) and (v not in u_nbrs):
+                wu_type = int(G.get_edge_data(w, u)['edge_type'])
+                t4 = tuple(sorted(set((iu_type, iv_type, iw_type, wu_type))))
+                vec_11[comb_4_edge.index(t4)] += 1
+            if (v in u_nbrs) and (w not in v_nbrs) and (w not in u_nbrs):
+                vu_type = int(G.get_edge_data(v, u)['edge_type'])
+                t4 = tuple(sorted(set((iu_type, iv_type, iw_type, vu_type))))
+                vec_11[comb_4_edge.index(t4)] += 1
+            if (w in v_nbrs) and (u not in w_nbrs) and (u not in v_nbrs):
+                wv_type = int(G.get_edge_data(w, v)['edge_type'])
+                t4 = tuple(sorted(set((iu_type, iv_type, iw_type, wv_type))))
+                vec_11[comb_4_edge.index(t4)] += 1
+
+            if (w in v_nbrs) and (u in w_nbrs) and (u in v_nbrs):
+                wv_type = int(G.get_edge_data(w, v)['edge_type'])
+                wu_type = int(G.get_edge_data(w, u)['edge_type'])
+                vu_type = int(G.get_edge_data(v, u)['edge_type'])
+                t6 = tuple(sorted(set((iu_type, iv_type, iw_type, wv_type, wu_type, vu_type))))
+                vec_14[comb_6_edge.index(t6)] += 1
+
+        vec_2 = [i // 2 for i in vec_2]
+        vec_3 = [i // 2 for i in vec_3]
+
+        vec = vec_0 + vec_2 + vec_3 + vec_7 + vec_11 + vec_13 + vec_14
+        res[i] = vec
+    return res
 
 
