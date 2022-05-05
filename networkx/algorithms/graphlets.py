@@ -1,13 +1,18 @@
 from itertools import combinations
 from itertools import combinations_with_replacement
 from collections import Counter
+from math import comb
 
 __all__ = ['typed_edge_induced_graphlet_degree_vector_ego', 'typed_edge_graphlet_degree_vector_ego',
            'induced_graphlet_degree_vector', 'typed_edge_induced_graphlet_degree_vector',
            'induced_graphlet_degree_vector_ego', 'graphlet_degree_vector_ego', 'three_wedge', 'four_clique',
            'four_cycle_plus', 'four_cycle_plus_2', 'induced_graphlet_degree_vector_v2',
            'colored_graphlet_vector_for_typed_edge', 'colored_ego_graphlet_vector_for_typed_edge', 'colored_ego_graphlet_vector_for_typed_edge_v2',
-           'hetero_graphlet_vector_for_typed_edge', 'hetero_ego_graphlet_vector_for_typed_edge']
+           'hetero_graphlet_vector_for_typed_edge', 'hetero_ego_graphlet_vector_for_typed_edge',
+           'get_type_from_index', 'get_type_from_index_for_ego_network',
+           'get_total_number_of_types_of_colored_graphlets_for_typed_edge', 'get_total_number_of_types_of_colored_graphlets_for_typed_node',
+           'get_total_number_of_types_of_hetero_graphlets_for_typed_edge', 'get_total_number_of_types_of_hetero_graphlets_for_typed_node',
+           'get_total_number_of_types_of_colored_ego_graphlets_for_typed_edge', 'get_total_number_of_types_of_hetero_ego_graphlets_for_typed_edge']
 
 # v_2 is implemented without using combination, and therefore include a lot of repetitions in calculation
 def induced_graphlet_degree_vector_v2(G, nodes=None):
@@ -1359,3 +1364,200 @@ def get_num_of_value(T, value):
         if T[i] == value:
             res += 1
     return res
+
+
+# Mapping index to colored/hetero graphlets
+# return tuple(graphlet_id, list_of_type_combinations)
+def get_type_from_index(method, num_type, idx):
+    type_list = list(range(1, num_type + 1))
+
+    if method == "colored":
+        comb_1_edge = get_all_comb_from_list(type_list, 1)
+        comb_2_edge = get_all_comb_from_list(type_list, 2)
+        comb_3_edge = get_all_comb_from_list(type_list, 3)
+        comb_4_edge = get_all_comb_from_list(type_list, 4)
+        comb_5_edge = get_all_comb_from_list(type_list, 5)
+        comb_6_edge = get_all_comb_from_list(type_list, 6)
+
+    if method == "hetero":
+        comb_1_edge = list(combinations_with_replacement(type_list, 1))
+        comb_2_edge = list(combinations_with_replacement(type_list, 2))
+        comb_3_edge = list(combinations_with_replacement(type_list, 3))
+        comb_4_edge = list(combinations_with_replacement(type_list, 4))
+        comb_5_edge = list(combinations_with_replacement(type_list, 5))
+        comb_6_edge = list(combinations_with_replacement(type_list, 6))
+
+    vec_0 = len(comb_1_edge)
+    vec_1 = len(comb_2_edge)
+    vec_2 = len(comb_2_edge)
+    vec_3 = len(comb_3_edge)
+    vec_4 = len(comb_3_edge)
+    vec_5 = len(comb_3_edge)
+    vec_6 = len(comb_3_edge)
+    vec_7 = len(comb_3_edge)
+    vec_8 = len(comb_4_edge)
+    vec_9 = len(comb_4_edge)
+    vec_10 = len(comb_4_edge)
+    vec_11 = len(comb_4_edge)
+    vec_12 = len(comb_5_edge)
+    vec_13 = len(comb_5_edge)
+    vec_14 = len(comb_6_edge)
+
+    helper_list = [vec_0, vec_1, vec_2, vec_3, vec_4, vec_5, vec_6, vec_7, vec_8, vec_9, vec_10, vec_11, vec_12, vec_13,
+                   vec_14]
+
+    tup = get_subvec_idx(helper_list, idx)
+
+    if (tup[0] == 0):
+        return (tup[0], comb_1_edge[tup[1]])
+    if (tup[0] == 1 or tup[0] == 2):
+        return (tup[0], comb_2_edge[tup[1]])
+    if (tup[0] == 3 or tup[0] == 4 or tup[0] == 5 or tup[0] == 6 or tup[0] == 7):
+        return (tup[0], comb_3_edge[tup[1]])
+    if (tup[0] == 8 or tup[0] == 9 or tup[0] == 10 or tup[0] == 11):
+        return (tup[0], comb_4_edge[tup[1]])
+    if (tup[0] == 12 or tup[0] == 13):
+        return (tup[0], comb_5_edge[tup[1]])
+    if (tup[0] == 14):
+        return (tup[0], comb_6_edge[tup[1]])
+
+
+def get_type_from_index_for_ego_network(method, num_type, idx):
+    type_list = list(range(1, num_type + 1))
+    type_list_with_zero = list(range(0, num_type + 1))
+
+    if method == "colored_ego":
+        # some orbits have type 0, some orbits don't
+        comb_1_edge = get_all_comb_from_list(type_list, 1)
+        comb_2_edge = get_all_comb_from_list(type_list, 2)
+        comb_3_edge = get_all_comb_from_list(type_list, 3)
+        comb_with_zero_3_edge = get_all_comb_from_list(type_list_with_zero, 3)
+        comb_4_edge = get_all_comb_from_list(type_list_with_zero, 4)
+        comb_5_edge = get_all_comb_from_list(type_list_with_zero, 5)
+        comb_6_edge = get_all_comb_from_list(type_list_with_zero, 6)
+
+    if method == "hetero_ego":
+        comb_1_edge = list(combinations_with_replacement(type_list, 1))
+        comb_2_edge = list(combinations_with_replacement(type_list, 2))
+        comb_3_edge = list(combinations_with_replacement(type_list, 3))
+        comb_with_zero_3_edge = list(combinations_with_replacement(type_list_with_zero, 3))
+        comb_4_edge = list(combinations_with_replacement(type_list_with_zero, 4))
+        comb_5_edge = list(combinations_with_replacement(type_list_with_zero, 5))
+        comb_6_edge = list(combinations_with_replacement(type_list_with_zero, 6))
+        # only one zero allowed in triangle
+        comb_with_zero_3_edge = [x for x in comb_with_zero_3_edge if get_num_of_value(x, 0) <= 1]
+        # only one zero allowed in tailed-triangle
+        comb_4_edge = [x for x in comb_4_edge if get_num_of_value(x, 0) <= 1]
+        # only two zero allowed in 4-chordal-cycle
+        comb_5_edge = [x for x in comb_5_edge if get_num_of_value(x, 0) <= 2]
+        # only three zero allowed in 4-clique
+        comb_6_edge = [x for x in comb_6_edge if get_num_of_value(x, 0) <= 3]
+
+    vec_0 = len(comb_1_edge)
+    vec_2 = len(comb_2_edge)
+    vec_3 = len(comb_with_zero_3_edge)
+    vec_7 = len(comb_3_edge)
+    vec_11 = len(comb_4_edge)
+    vec_13 = len(comb_5_edge)
+    vec_14 = len(comb_6_edge)
+
+    helper_list = [vec_0, vec_2, vec_3, vec_7, vec_11, vec_13, vec_14]
+    tup = get_subvec_idx(helper_list, idx)
+
+    if (tup[0] == 0):
+        return (0, comb_1_edge[tup[1]])
+    if (tup[0] == 1):
+        return (2, comb_2_edge[tup[1]])
+    if (tup[0] == 2):
+        return (3, comb_with_zero_3_edge[tup[1]])
+    if (tup[0] == 3):
+        return (7, comb_3_edge[tup[1]])
+    if (tup[0] == 4):
+        return (11, comb_4_edge[tup[1]])
+    if (tup[0] == 5):
+        return (13, comb_5_edge[tup[1]])
+    if (tup[0] == 6):
+        return (14, comb_6_edge[tup[1]])
+
+
+# helper function for get_type_from_index
+def get_subvec_idx(helper_list, idx):
+    gate = 0
+    for i in range(0, len(helper_list)):
+        gate += helper_list[i]
+        if gate > idx:
+            return (i, helper_list[i] - (gate-idx))
+    return False
+
+
+#---------------------------------calculating overall number--------------------------------------------
+
+# for one graphlet
+def number_of_types_of_colored_graphlets(num_type, num_edge_or_node):
+    res = 0
+    for i in range(1, min(num_edge_or_node, num_type) + 1):
+        res += comb(num_type, i)
+    return res
+
+def get_total_number_of_types_of_colored_graphlets_for_typed_node(num_type):
+    num_2 = number_of_types_of_colored_graphlets(num_type, 2)
+    num_3 = number_of_types_of_colored_graphlets(num_type, 3)
+    num_4 = number_of_types_of_colored_graphlets(num_type, 4)
+    return num_2 + 3*num_3 + 11*num_4
+
+def get_total_number_of_types_of_hetero_graphlets_for_typed_node(num_type):
+    type_list = list(range(1, num_type + 1))
+    num_2 = len(list(combinations_with_replacement(type_list, 2)))
+    num_3 = len(list(combinations_with_replacement(type_list, 3)))
+    num_4 = len(list(combinations_with_replacement(type_list, 4)))
+    return num_2 + 3*num_3 + 11*num_4
+
+def get_total_number_of_types_of_colored_graphlets_for_typed_edge(num_type):
+    num_1 = number_of_types_of_colored_graphlets(num_type, 1)
+    num_2 = number_of_types_of_colored_graphlets(num_type, 2)
+    num_3 = number_of_types_of_colored_graphlets(num_type, 3)
+    num_4 = number_of_types_of_colored_graphlets(num_type, 4)
+    num_5 = number_of_types_of_colored_graphlets(num_type, 5)
+    num_6 = number_of_types_of_colored_graphlets(num_type, 6)
+    return num_1 + 2*num_2 + 5*num_3 + 4*num_4 + 2*num_5 + num_6
+
+def get_total_number_of_types_of_hetero_graphlets_for_typed_edge(num_type):
+    type_list = list(range(1, num_type + 1))
+    num_1 = len(list(combinations_with_replacement(type_list, 1)))
+    num_2 = len(list(combinations_with_replacement(type_list, 2)))
+    num_3 = len(list(combinations_with_replacement(type_list, 3)))
+    num_4 = len(list(combinations_with_replacement(type_list, 4)))
+    num_5 = len(list(combinations_with_replacement(type_list, 5)))
+    num_6 = len(list(combinations_with_replacement(type_list, 6)))
+    return num_1 + 2*num_2 + 5*num_3 + 4*num_4 + 2*num_5 + num_6
+
+def get_total_number_of_types_of_colored_ego_graphlets_for_typed_edge(num_type):
+    num_1 = number_of_types_of_colored_graphlets(num_type, 1)
+    num_2 = number_of_types_of_colored_graphlets(num_type, 2)
+    num_3 = number_of_types_of_colored_graphlets(num_type, 3)
+    num_3_plus= number_of_types_of_colored_graphlets(num_type+1, 3)
+    num_4 = number_of_types_of_colored_graphlets(num_type+1, 4)
+    num_5 = number_of_types_of_colored_graphlets(num_type+1, 5)
+    num_6 = number_of_types_of_colored_graphlets(num_type+1, 6)
+    return num_1 + num_2 + num_3 + num_3_plus + num_4 + num_5 + num_6
+
+def get_total_number_of_types_of_hetero_ego_graphlets_for_typed_edge(num_type):
+    type_list = list(range(1, num_type + 1))
+    type_list_with_zero = list(range(0, num_type + 1))
+    # No zero allowed in 2-clique, 2-path, and 3-star
+    comb_1_edge = len(list(combinations_with_replacement(type_list, 1)))
+    comb_2_edge = len(list(combinations_with_replacement(type_list, 2)))
+    comb_3_edge = len(list(combinations_with_replacement(type_list, 3)))
+    comb_with_zero_3_edge = list(combinations_with_replacement(type_list_with_zero, 3))
+    comb_with_zero_4_edge = list(combinations_with_replacement(type_list_with_zero, 4))
+    comb_with_zero_5_edge = list(combinations_with_replacement(type_list_with_zero, 5))
+    comb_with_zero_6_edge = list(combinations_with_replacement(type_list_with_zero, 6))
+    # only one zero allowed in triangle
+    comb_with_zero_3_edge = len([x for x in comb_with_zero_3_edge if get_num_of_value(x, 0) <= 1])
+    # only one zero allowed in tailed-triangle
+    comb_with_zero_4_edge = len([x for x in comb_with_zero_4_edge if get_num_of_value(x, 0) <= 1])
+    # only two zero allowed in 4-chordal-cycle
+    comb_with_zero_5_edge = len([x for x in comb_with_zero_5_edge if get_num_of_value(x, 0) <= 2])
+    # only three zero allowed in 4-clique
+    comb_with_zero_6_edge = len([x for x in comb_with_zero_6_edge if get_num_of_value(x, 0) <= 3])
+    return comb_1_edge + comb_2_edge + comb_3_edge + comb_with_zero_3_edge + comb_with_zero_4_edge + comb_with_zero_5_edge + comb_with_zero_6_edge
