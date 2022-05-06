@@ -1368,7 +1368,7 @@ def get_num_of_value(T, value):
 
 # Mapping index to colored/hetero graphlets
 # return tuple(graphlet_id, list_of_type_combinations)
-def get_type_from_index(method, num_type, idx):
+def get_type_from_index(method, num_type, idx_list):
     type_list = list(range(1, num_type + 1))
 
     if method == "colored":
@@ -1406,23 +1406,26 @@ def get_type_from_index(method, num_type, idx):
     helper_list = [vec_0, vec_1, vec_2, vec_3, vec_4, vec_5, vec_6, vec_7, vec_8, vec_9, vec_10, vec_11, vec_12, vec_13,
                    vec_14]
 
-    tup = get_subvec_idx(helper_list, idx)
+    res = []
+    for idx in idx_list:
+        tup = get_subvec_idx(helper_list, idx)
 
-    if (tup[0] == 0):
-        return (tup[0], comb_1_edge[tup[1]])
-    if (tup[0] == 1 or tup[0] == 2):
-        return (tup[0], comb_2_edge[tup[1]])
-    if (tup[0] == 3 or tup[0] == 4 or tup[0] == 5 or tup[0] == 6 or tup[0] == 7):
-        return (tup[0], comb_3_edge[tup[1]])
-    if (tup[0] == 8 or tup[0] == 9 or tup[0] == 10 or tup[0] == 11):
-        return (tup[0], comb_4_edge[tup[1]])
-    if (tup[0] == 12 or tup[0] == 13):
-        return (tup[0], comb_5_edge[tup[1]])
-    if (tup[0] == 14):
-        return (tup[0], comb_6_edge[tup[1]])
+        if (tup[0] == 0):
+            res.append((tup[0], comb_1_edge[tup[1]]))
+        if (tup[0] == 1 or tup[0] == 2):
+            res.append((tup[0], comb_2_edge[tup[1]]))
+        if (tup[0] == 3 or tup[0] == 4 or tup[0] == 5 or tup[0] == 6 or tup[0] == 7):
+            res.append((tup[0], comb_3_edge[tup[1]]))
+        if (tup[0] == 8 or tup[0] == 9 or tup[0] == 10 or tup[0] == 11):
+            res.append((tup[0], comb_4_edge[tup[1]]))
+        if (tup[0] == 12 or tup[0] == 13):
+            res.append((tup[0], comb_5_edge[tup[1]]))
+        if (tup[0] == 14):
+            res.append((tup[0], comb_6_edge[tup[1]]))
+    return res
 
 
-def get_type_from_index_for_ego_network(method, num_type, idx):
+def get_type_from_index_for_ego_network(method, num_type, idx_list):
     type_list = list(range(1, num_type + 1))
     type_list_with_zero = list(range(0, num_type + 1))
 
@@ -1462,23 +1465,26 @@ def get_type_from_index_for_ego_network(method, num_type, idx):
     vec_14 = len(comb_6_edge)
 
     helper_list = [vec_0, vec_2, vec_3, vec_7, vec_11, vec_13, vec_14]
-    tup = get_subvec_idx(helper_list, idx)
 
-    if (tup[0] == 0):
-        return (0, comb_1_edge[tup[1]])
-    if (tup[0] == 1):
-        return (2, comb_2_edge[tup[1]])
-    if (tup[0] == 2):
-        return (3, comb_with_zero_3_edge[tup[1]])
-    if (tup[0] == 3):
-        return (7, comb_3_edge[tup[1]])
-    if (tup[0] == 4):
-        return (11, comb_4_edge[tup[1]])
-    if (tup[0] == 5):
-        return (13, comb_5_edge[tup[1]])
-    if (tup[0] == 6):
-        return (14, comb_6_edge[tup[1]])
+    res = []
+    for idx in idx_list:
+        tup = get_subvec_idx(helper_list, idx)
 
+        if (tup[0] == 0):
+            res.append((0, comb_1_edge[tup[1]]))
+        if (tup[0] == 1):
+            res.append((2, comb_2_edge[tup[1]]))
+        if (tup[0] == 2):
+            res.append((3, comb_with_zero_3_edge[tup[1]]))
+        if (tup[0] == 3):
+            res.append((7, comb_3_edge[tup[1]]))
+        if (tup[0] == 4):
+            res.append((11, comb_4_edge[tup[1]]))
+        if (tup[0] == 5):
+            res.append((13, comb_5_edge[tup[1]]))
+        if (tup[0] == 6):
+            res.append((14, comb_6_edge[tup[1]]))
+    return res
 
 # helper function for get_type_from_index
 def get_subvec_idx(helper_list, idx):
