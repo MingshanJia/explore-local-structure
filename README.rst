@@ -26,11 +26,12 @@ The code for computing the quadrangle coefficients is located at https://github.
     - Experiments: The code of all the experiments in our paper can be found at https://github.com/MingshanJia/explore-local-structure/tree/master/experiments_for_quad
     - Datasets: The datasets used in the experiments is located at https://github.com/MingshanJia/explore-local-structure/tree/master/experiments_for_quad/datasets
 
-3. Typed-Edge Graphlet Degree Vector (Chronic Pain Study)
+3. Encoding edge type information in graphlets (Chronic Pain Study)
 -----------------------
-The code for generating TyE-GDV is located at https://github.com/MingshanJia/explore-local-structure/blob/master/networkx/algorithms/graphlets.py
+The code for generating TyE-GDV, Colored-GDV and Hetero-GDV is located at https://github.com/MingshanJia/explore-local-structure/blob/master/networkx/algorithms/graphlets.py
 
     - Experiments: The code of all the experiments in our paper can be found at https://github.com/MingshanJia/explore-local-structure/tree/master/experiments_for_TyE-GDV
+    - Datasets: The datasets used in the experiments is located at https://github.com/MingshanJia/explore-local-structure/tree/master/experiments_for_TyE-GDV/datasets
     
 4. Local Structure and Centrality Measures (Chronic Pain Study)
 -----------------------
