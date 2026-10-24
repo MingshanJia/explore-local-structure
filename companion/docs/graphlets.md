@@ -26,11 +26,13 @@ import networkx as nx
 import explore_local_structure as els
 
 G = nx.Graph()
-G.add_edges_from([
-    ("ego", "a", {"edge_type": 1}),
-    ("ego", "b", {"edge_type": "1"}),
-    ("a", "b", {"edge_type": 2}),
-])
+G.add_edges_from(
+    [
+        ("ego", "a", {"edge_type": 1}),
+        ("ego", "b", {"edge_type": "1"}),
+        ("a", "b", {"edge_type": 2}),
+    ]
+)
 typed = els.typed_edge_induced_graphlet_degree_vector_ego(G, 2, nodes="ego")
 assert typed["ego"][2] == [2, 1]
 flat = [value for row in typed["ego"] for value in row]
