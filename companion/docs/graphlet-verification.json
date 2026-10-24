@@ -1,0 +1,55 @@
+{
+  "legacy_commit": "9454ce0da9fd6e9399e17dc552797add44e25933",
+  "legacy_source_sha256": "c3b6e38e66b466a0e9cac663fd24a44cd6bb1fb0178f42f22a054425e1f2cdc5",
+  "graph_method_comparisons": 8004,
+  "coordinate_schemas_compared": 16,
+  "matches": "exact integer equality for every returned vector",
+  "max_absolute_difference": 0,
+  "dataset": {
+    "path": "experiments_for_quad/datasets/FW-Chesa",
+    "sha256": "447fac8360f873cd57cbe0b8fae37c9a60ecf644eba9ffadb1fcee45586619b5",
+    "nodes": 39,
+    "edges": 170,
+    "transformation": "undirected simple graph, loops removed",
+    "types": "synthetic 1..3 cyclically over lexicographically sorted undirected edges",
+    "note": "This is count validation, not a reproduction of the patient classification study.",
+    "example_node": "1",
+    "example_typed_ego": [
+      [
+        4,
+        4,
+        3
+      ],
+      [
+        27,
+        26,
+        13
+      ],
+      [
+        20,
+        22,
+        24
+      ],
+      [
+        59,
+        52,
+        24
+      ],
+      [
+        74,
+        87,
+        55
+      ],
+      [
+        86,
+        91,
+        93
+      ],
+      [
+        24,
+        22,
+        26
+      ]
+    ]
+  }
+}

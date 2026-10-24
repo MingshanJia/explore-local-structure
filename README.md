@@ -54,11 +54,15 @@ repository and are not part of official NetworkX.
 
 The original vendored NetworkX, experiments, datasets and graphlet work remain
 in their existing locations. See the [original README](README.rst).
-The modern package ports closure and quadrangle methods; ego/typed/colored/
-heterogeneous graphlet APIs remain in the original research code.
+The modern package ports closure and quadrangle methods plus the primary
+two- to four-node edge-typed graphlet APIs: full 15-orbit TyE-GDV, seven-orbit
+ego vectors, and colored/heterogeneous variants. Original coordinate order is
+preserved. See [graphlet examples and validation](companion/docs/graphlets.md).
+The experimental alternate-v2 and typed-node APIs remain in the research code.
 
 - [Directed closure coefficient and its patterns (PLOS ONE, 2021)](https://doi.org/10.1371/journal.pone.0253822)
 - [Measuring Quadrangle Formation in Complex Networks (IEEE TNSE, 2022)](https://doi.org/10.1109/TNSE.2021.3123735)
+- [Encoding edge type information in graphlets (PLOS ONE, 2022)](https://doi.org/10.1371/journal.pone.0273609)
 
 ## Development
 

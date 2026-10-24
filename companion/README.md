@@ -1,7 +1,7 @@
 # Explore Local Structure
 
 A companion package for endpoint-based triangle closure and inner/outer
-quadrangle coefficients. It uses standard NetworkX graphs and does not replace
+quadrangle coefficients, and edge-typed graphlet vectors. It uses standard NetworkX graphs and does not replace
 or install a second package named `networkx`.
 
 ```shell
@@ -35,6 +35,17 @@ assert (i_quad, o_quad) == (2 / 3, 1.0)
 | `average_inner_quadrangle_coefficient`, `average_outer_quadrangle_coefficient` | Graph | Arithmetic local means |
 | `global_quadrangle_coefficient` | Graph | Ratio of summed counts; weighted form is a derived legacy extension |
 | `number_of_quadrangles` | Graph | Unweighted four-cycle count, including chords |
+| `typed_edge_induced_graphlet_degree_vector` | Graph | 15-orbit edge-type histograms |
+| `typed_edge_induced_graphlet_degree_vector_ego` | Graph | Seven ego-orbit edge-type histograms |
+| `typed_edge_graphlet_degree_vector_ego` | Graph | Non-induced ego edge-type histograms |
+| `colored_graphlet_vector_for_typed_edge`, `colored_ego_graphlet_vector_for_typed_edge` | Graph | Induced type-set counts |
+| `hetero_graphlet_vector_for_typed_edge`, `hetero_ego_graphlet_vector_for_typed_edge` | Graph | Induced type-multiset counts |
+
+Graphlet APIs retain the original node-keyed dictionary results and coordinate
+ordering. Edge types use integer or integer-string labels with explicit type-0
+rules; see [graphlet usage, definitions and validation](docs/graphlets.md).
+Untyped 15-orbit and seven-orbit ego vectors, feature names and the original
+edge-typed vector decoding/length helpers are also available.
 
 The directed patterns are `total`, `source`, `target`, `head`, `mid`, `end`,
 and `cyclic`. Weighted non-total patterns raise `NetworkXNotImplemented` because
@@ -65,13 +76,16 @@ software convention.
 - Mingshan Jia, Bogdan Gabrys and Katarzyna Musial. Measuring Quadrangle
   Formation in Complex Networks. IEEE TNSE 9(2), 538–551, 2022.
   [DOI](https://doi.org/10.1109/TNSE.2021.3123735).
+- Mingshan Jia et al. Encoding edge type information in graphlets.
+  PLOS ONE 17(8), 2022. [DOI](https://doi.org/10.1371/journal.pone.0273609).
 
 The original research snapshot is preserved at commit
 `9454ce0da9fd6e9399e17dc552797add44e25933`. Its datasets, vendored NetworkX and experiment
 scripts also remain in the repository root alongside this `companion/` package.
 Run modern examples from this directory or outside the repository root to avoid
-importing the root's legacy `networkx` copy. Ego/typed/colored/heterogeneous graphlet ports remain a separate
-track; this release does not claim to port those experimental APIs.
+importing the root's legacy `networkx` copy. The companion now includes the
+primary two- to four-node edge-typed graphlet APIs. Five-node, typed-node,
+edge-orbit and experimental alternate-v2 APIs remain outside this port.
 
 See [migration](docs/migration.md) and [contribution preparation](docs/upstream.md).
 

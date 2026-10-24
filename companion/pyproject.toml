@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "explore-local-structure"
-version = "0.1.0"
-description = "Endpoint-based closure and inner/outer quadrangle coefficients for NetworkX graphs"
+version = "0.2.0"
+description = "Closure, quadrangle coefficients and edge-typed graphlets for NetworkX graphs"
 readme = "README.md"
 requires-python = ">=3.12,!=3.14.1"
 license = "BSD-3-Clause"

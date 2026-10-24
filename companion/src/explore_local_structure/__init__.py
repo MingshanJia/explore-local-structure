@@ -6,6 +6,25 @@ from .closure import (
     closure,
     directed_closure,
 )
+from .graphlets import (
+    colored_ego_graphlet_vector_for_typed_edge,
+    colored_graphlet_vector_for_typed_edge,
+    get_total_number_of_types_of_colored_ego_graphlets_for_typed_edge,
+    get_total_number_of_types_of_colored_graphlets_for_typed_edge,
+    get_total_number_of_types_of_hetero_ego_graphlets_for_typed_edge,
+    get_total_number_of_types_of_hetero_graphlets_for_typed_edge,
+    get_type_from_index,
+    get_type_from_index_for_ego_network,
+    graphlet_degree_vector_ego,
+    graphlet_feature_names,
+    hetero_ego_graphlet_vector_for_typed_edge,
+    hetero_graphlet_vector_for_typed_edge,
+    induced_graphlet_degree_vector,
+    induced_graphlet_degree_vector_ego,
+    typed_edge_graphlet_degree_vector_ego,
+    typed_edge_induced_graphlet_degree_vector,
+    typed_edge_induced_graphlet_degree_vector_ego,
+)
 from .quadrangle import (
     average_inner_quadrangle_coefficient,
     average_outer_quadrangle_coefficient,
@@ -16,8 +35,25 @@ from .quadrangle import (
     quadrangle_coefficients,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
+    "induced_graphlet_degree_vector",
+    "induced_graphlet_degree_vector_ego",
+    "graphlet_degree_vector_ego",
+    "typed_edge_induced_graphlet_degree_vector",
+    "typed_edge_induced_graphlet_degree_vector_ego",
+    "typed_edge_graphlet_degree_vector_ego",
+    "colored_graphlet_vector_for_typed_edge",
+    "hetero_graphlet_vector_for_typed_edge",
+    "colored_ego_graphlet_vector_for_typed_edge",
+    "hetero_ego_graphlet_vector_for_typed_edge",
+    "graphlet_feature_names",
+    "get_type_from_index",
+    "get_type_from_index_for_ego_network",
+    "get_total_number_of_types_of_colored_graphlets_for_typed_edge",
+    "get_total_number_of_types_of_hetero_graphlets_for_typed_edge",
+    "get_total_number_of_types_of_colored_ego_graphlets_for_typed_edge",
+    "get_total_number_of_types_of_hetero_ego_graphlets_for_typed_edge",
     "closure",
     "average_closure",
     "directed_closure",
